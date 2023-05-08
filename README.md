@@ -17,3 +17,14 @@
     (2) x86 어셈블리 코드에 대한 중간 표현 생성<br>
     (3) 중간 표현을 이용하여 코드 최적화<br>
     (4) Case Study (Themida, VMProtect의 Mutation 옵션이 적용된 코드에 대해서 테스트 진행)<br>
+
+- 예시
+(1) Dead Store Code가 포함된 x86 코드<br>
+![image](https://user-images.githubusercontent.com/15829327/236723085-104c7817-03c2-452c-afa5-fcf1dfa7fe31.png)
+<br>
+(2) x86 코드에 대한 중간표현 생성<br>
+![image](https://user-images.githubusercontent.com/15829327/236723160-22374843-4206-44ce-b431-5446805cce70.png)
+<br>
+(3) 최적화된 중간표현<br>
+![image](https://user-images.githubusercontent.com/15829327/236723268-f46f354f-7d55-44dc-ba15-f5b3ce3512b9.png)
+<br>
