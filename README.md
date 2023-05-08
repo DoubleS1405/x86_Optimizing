@@ -21,7 +21,7 @@ Searching for papers and studies on de-obfuscation led to the conclusion that it
     (1) 코드 최적화에 필요한 컴파일러 이론<br>
     (2) x86 어셈블리 코드에 대한 중간 표현 생성<br>
     (3) 중간 표현을 이용하여 코드 최적화<br>
-    (4) Case Study (Themida, VMProtect의 Mutation 옵션이 적용된 코드에 대해서 테스트 진행)<br>
+    (4) 테스트 (Themida, VMProtect의 Mutation 옵션이 적용된 코드에 대해서 테스트 진행)<br>
 <br>
 
 - Example<br>
