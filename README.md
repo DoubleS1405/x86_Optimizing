@@ -19,6 +19,7 @@
     (4) Case Study (Themida, VMProtect의 Mutation 옵션이 적용된 코드에 대해서 테스트 진행)<br>
 
 - 예시
+<br>
 (1) Dead Store Code가 포함된 x86 코드<br>
 ![image](https://user-images.githubusercontent.com/15829327/236723085-104c7817-03c2-452c-afa5-fcf1dfa7fe31.png)
 <br>
