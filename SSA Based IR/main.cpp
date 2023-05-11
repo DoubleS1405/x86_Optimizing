@@ -1148,15 +1148,21 @@ Value* GetMemoryValue(ZydisDecodedInstruction* decodedInstPtr, ZydisDecodedOpera
 				if (decodedInstPtr->address_width == 32)
 				{
 					// Base 레지스터의 Value가 상수인 경우 EA는 상수이므로 해당 EA에 대한 Memory Value Pool에 저장한다.
-					if (dynamic_cast<ConstInt*>(BaseValue))
+					if (dynamic_cast<IR*>(BaseValue)->opr == IR::OPR::OPR_BVV)
 					{
 						// 메모리 주소로부터 0부터 3바이트 주소에 대한 Memory Value Pool이 모두 존재해야 함
-						if (MemValue.find(dynamic_cast<ConstInt*>(BaseValue)->intVar) != MemValue.end() &&
-							MemValue.find(dynamic_cast<ConstInt*>(BaseValue)->intVar + 1) != MemValue.end() &&
-							MemValue.find(dynamic_cast<ConstInt*>(BaseValue)->intVar + 2) != MemValue.end() &&
-							MemValue.find(dynamic_cast<ConstInt*>(BaseValue)->intVar + 3) != MemValue.end())
+						if (MemValue.find(dynamic_cast<ConstInt*>(dynamic_cast<IR*>(BaseValue)->Operands[0]->valuePtr)->intVar) != MemValue.end() &&
+							MemValue.find(dynamic_cast<ConstInt*>(dynamic_cast<IR*>(BaseValue)->Operands[0]->valuePtr)->intVar + 1) != MemValue.end() &&
+							MemValue.find(dynamic_cast<ConstInt*>(dynamic_cast<IR*>(BaseValue)->Operands[0]->valuePtr)->intVar  + 2) != MemValue.end() &&
+							MemValue.find(dynamic_cast<ConstInt*>(dynamic_cast<IR*>(BaseValue)->Operands[0]->valuePtr)->intVar  + 3) != MemValue.end())
 						{
-							printf("test");
+							printf("test\n");
+							offset0Value = MemValue[(dynamic_cast<ConstInt*>(dynamic_cast<IR*>(BaseValue)->Operands[0]->valuePtr)->intVar)].back();
+							offset1Value = MemValue[(dynamic_cast<ConstInt*>(dynamic_cast<IR*>(BaseValue)->Operands[0]->valuePtr)->intVar + 1)].back();
+							offset2Value = MemValue[(dynamic_cast<ConstInt*>(dynamic_cast<IR*>(BaseValue)->Operands[0]->valuePtr)->intVar + 2)].back();
+							offset3Value = MemValue[(dynamic_cast<ConstInt*>(dynamic_cast<IR*>(BaseValue)->Operands[0]->valuePtr)->intVar + 3)].back();
+							rstIR = new IR(IR::OPR::OPR_CONCAT, offset0Value, offset1Value, offset2Value, offset3Value);
+							irList.push_back(rstIR);
 						}
 
 						else
@@ -2003,7 +2009,7 @@ int main()
 						 //{0x0f,0x47,0xcb,0x0f,0xb7,0xcd,0x0f,0xbf,0xce,0xd3,0xf1,0xd3,0xf9,0x8a,0xe8,0x81,0xed,0x04,0x00,0x00,0x00,0x8b,0x4c,0x25,0x00};
 	//{ 0x89, 0xD8,0x89, 0xd9, 0x01,0xc1,0x89,0xd0, 0x01,0xce, 0x00,0xed, 0x89,0xc1, 0x89,0xc6,0x01,0xc1 };
 	//{ 0xD2,0xC8,0x89,0xe8,0x89,0xcd,0x33,0xC3,0xF8,0x05,0x92,0x45,0x6F,0x67,0xF9,0xF7,0xD0,0x35,0x3D,0x21,0x33,0x61,0xF8,0x89,0xD8,0xF8,0x35,0xEF,0x46,0x71,0x55,0xF9,0x33,0xD8,0x81,0xFE,0x9F,0x1B,0xBA,0x6C,0x03,0xF8 };
-	{ 0x55, 0xBB, 0x45, 0x23, 0x01, 0x00, 0x8B,0x0A, 0x01, 0xf0, 0x8B, 0x01, 0x8B, 0x00, 0x89, 0xC2,0x89,0x13 };
+	{ 0x55, 0x8B,0x0c,0x24,0xBB, 0x45, 0x23, 0x01, 0x00, 0x8B,0x0A, 0x01, 0xf0, 0x8B, 0x01, 0x8B, 0x00, 0x89, 0xC2,0x89,0x13 };
 	ZydisDecoderInit(&decoder, ZYDIS_MACHINE_MODE_LONG_COMPAT_32, ZYDIS_STACK_WIDTH_32);
 
 	initReg();
@@ -2037,7 +2043,7 @@ int main()
 		length += g_inst.length;
 	}
 
-	printf("MemValue.size() :%d\n", MemValue.size());
+	printf("MemValue.size() :%d\n", MemValue.rbegin()->second.size() );
 	system("pause");
 
 	int cnt = 0;
