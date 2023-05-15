@@ -1,5 +1,5 @@
 # x86_Optimizing
-- 목표 : Dummy Code가 적용된 x86 바이너리에 대해서 '최적화'를 수행한다.<br>
+- Project Objective : Perform "optimization" on the x86 binary with the dummy code applied..<br>
 <br>
 
 # About the project
@@ -18,17 +18,17 @@ Searching for papers and studies on de-obfuscation led to the conclusion that it
 <br>
 
 - Project planning<br>
-    (1) 코드 최적화에 필요한 컴파일러 이론<br>
-    (2) x86 어셈블리 코드에 대한 중간 표현 생성<br>
-    (3) 중간 표현을 이용하여 코드 최적화<br>
+    (1) Researching optimization techniques to use in your project<br>
+    (2) Create an intermediate representation for x86 assembly code<br>
+    (3) Optimize for intermediate representations<br>
     (4) 테스트 (Themida, VMProtect의 Mutation 옵션이 적용된 코드에 대해서 테스트 진행)<br>
 <br>
 
 - Example<br>
-(1) Dead Store Code가 포함된 x86 코드<br>
+(1) Dead Store Code<br>
 ![image](https://user-images.githubusercontent.com/15829327/236723085-104c7817-03c2-452c-afa5-fcf1dfa7fe31.png)<br><br>
-(2) x86 코드에 대한 중간표현 생성<br>
+(2) intermediate representation for x86 assembly code<br>
 ![image](https://user-images.githubusercontent.com/15829327/236723160-22374843-4206-44ce-b431-5446805cce70.png)<br><br>
-(3) 최적화된 중간표현<br>
+(3) Optimized intermediate representation <br>
 ![image](https://user-images.githubusercontent.com/15829327/236723268-f46f354f-7d55-44dc-ba15-f5b3ce3512b9.png)<br><br>
 <br>
