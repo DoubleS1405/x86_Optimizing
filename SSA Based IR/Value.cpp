@@ -5,7 +5,7 @@ DWORD tmpNum = 0;
 Value::Value()
 {
 	Name = "t" + std::to_string(tmpNum);
-	//printf("Value Name :%s\n", Name.c_str());
+	//printf("[Default Constructor] Value Name :%s\n", Name.c_str());
 	tmpNum++;
 }
 
@@ -21,6 +21,13 @@ Value::Value(DWORD val, WORD size)
 Value::Value(string ValName, DWORD idx)
 {
 	Name = ValName + "(" + std::to_string(idx) + ")";
+	//printf("Value Name :%s\n", Name.c_str());
+}
+
+Value::Value(const Value& valRef)
+	:OperandType(valRef.OperandType), Size(valRef.Size), UseList(valRef.UseList), isHiddenRHS(valRef.isHiddenRHS)
+{
+	Name = valRef.Name;
 	//printf("Value Name :%s\n", Name.c_str());
 }
 

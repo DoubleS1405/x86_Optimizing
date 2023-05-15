@@ -948,7 +948,10 @@ void SaveMemoryValue(ZydisDecodedInstruction* decodedInstPtr, ZydisDecodedOperan
 								reg8lIR = new IR(_regValue->Name, 0, IR::OPR::OPR_EXTRACT8L, _regValue);
 							MemValue[_memAddr].push_back(reg8lIR);
 							irList.push_back(reg8lIR);
-							rstIR = CraeteStoreIR(BaseValue, _regValue, IR::OPR_STORE);
+
+							Value tempValue = *_regValue;
+							Value Op2Value2 = tempValue;
+							rstIR = CraeteStoreIR(BaseValue, &Op2Value2, IR::OPR_STORE);
 							rstIR->isHiddenRHS = true;
 							irList.push_back(rstIR);
 						}
@@ -1012,7 +1015,6 @@ void SaveMemoryValue(ZydisRegister zydisRegister, Value* _regValue, BYTE _size, 
 		// Base 레지스터의 Value가 상수인 경우 EA는 상수이므로 해당 EA에 대한 Memory Value Pool에 저장한다.
 		if (dynamic_cast<IR*>(BaseValue)->opr == IR::OPR::OPR_BVV)
 		{
-			printf("SaveMemoryValue -> BaseValue is Constant\n");
 			DWORD _memAddr = dynamic_cast<ConstInt*>(dynamic_cast<IR*>(BaseValue)->Operands[0]->valuePtr)->intVar;
 			IR* reg8hh;
 			IR* reg8hlIR;
@@ -1066,7 +1068,12 @@ void SaveMemoryValue(ZydisRegister zydisRegister, Value* _regValue, BYTE _size, 
 					reg8lIR = new IR(_regValue->Name, 0, IR::OPR::OPR_EXTRACT8L, _regValue);
 				MemValue[_memAddr].push_back(reg8lIR);
 				irList.push_back(reg8lIR);
-				rstIR = CraeteStoreIR(BaseValue, _regValue, IR::OPR_STORE);
+
+				Value dasdg = *_regValue;
+				Value *Op2Test = new Value;
+				*Op2Test = dasdg;
+				//Value tempValue = *_regValue;
+				rstIR = CraeteStoreIR(BaseValue, Op2Test, IR::OPR_STORE);
 				rstIR->isHiddenRHS = true;
 				irList.push_back(rstIR);
 			}
@@ -2009,7 +2016,7 @@ int main()
 						 //{0x0f,0x47,0xcb,0x0f,0xb7,0xcd,0x0f,0xbf,0xce,0xd3,0xf1,0xd3,0xf9,0x8a,0xe8,0x81,0xed,0x04,0x00,0x00,0x00,0x8b,0x4c,0x25,0x00};
 	//{ 0x89, 0xD8,0x89, 0xd9, 0x01,0xc1,0x89,0xd0, 0x01,0xce, 0x00,0xed, 0x89,0xc1, 0x89,0xc6,0x01,0xc1 };
 	//{ 0xD2,0xC8,0x89,0xe8,0x89,0xcd,0x33,0xC3,0xF8,0x05,0x92,0x45,0x6F,0x67,0xF9,0xF7,0xD0,0x35,0x3D,0x21,0x33,0x61,0xF8,0x89,0xD8,0xF8,0x35,0xEF,0x46,0x71,0x55,0xF9,0x33,0xD8,0x81,0xFE,0x9F,0x1B,0xBA,0x6C,0x03,0xF8 };
-	{ 0x55, 0x8B,0x0c,0x24,0xBB, 0x45, 0x23, 0x01, 0x00, 0x8B,0x0A, 0x01, 0xf0, 0x8B, 0x01, 0x8B, 0x00, 0x89, 0xC2,0x89,0x13 };
+	{ 0x55, /*0x8B,0x0c,0x24,*/0xBB, 0x45, 0x23, 0x01, 0x00, 0x8B,0x0A, 0x01, 0xf0, 0x8B, 0x01, 0x8B, 0x00, 0x89, 0xC2,0x89,0x13 };
 	ZydisDecoderInit(&decoder, ZYDIS_MACHINE_MODE_LONG_COMPAT_32, ZYDIS_STACK_WIDTH_32);
 
 	initReg();
@@ -2059,7 +2066,7 @@ int main()
 		printf("--------------------------------\n");
 	}
 	printf("Total IR %d\n", cnt);
-
+#pragma region Dead Store Elimination
 	for (int i = 0; i < cnt; i++)
 	{
 		map<DWORD, vector<IR*>>::iterator it1 = IRList.begin();
@@ -2080,6 +2087,23 @@ int main()
 				//printf("[%p]", it1->first);
 				//printIR(*it);
 				//printf("[%p} IR :%d opcnt:%d\n", it1.first, it->opr, it->Operands.size());
+				if (tmpIRPtr->opr == IR::OPR::OPR_STORE)
+				{
+					//printf("[Dead Store Elimination] dynamic_cast<IR*>(tmpIRPtr->Operands[0]->valuePtr)->opr %d\n", dynamic_cast<IR*>(tmpIRPtr->Operands[0]->valuePtr)->opr);
+					if (dynamic_cast<IR*>(tmpIRPtr->Operands[0]->valuePtr)->opr == IR::OPR::OPR_BVV)
+					{
+						if (dynamic_cast<ConstInt*>(dynamic_cast<IR*>(tmpIRPtr->Operands[0]->valuePtr)->Operands[0]->valuePtr))
+						{
+							if (MemValue[dynamic_cast<ConstInt*>(dynamic_cast<IR*>(tmpIRPtr->Operands[0]->valuePtr)->Operands[0]->valuePtr)->intVar].back()->UseList.size() == 0)
+							{
+								//printf("[Dead Store Elimination] MemValue[dynamic_cast<ConstInt*>(dynamic_cast<IR*>(tmpIRPtr->Operands[0]->valuePtr)->Operands[0]->valuePtr)->intVar].back()->UseList.size() %d\n", MemValue[dynamic_cast<ConstInt*>(dynamic_cast<IR*>(tmpIRPtr->Operands[0]->valuePtr)->Operands[0]->valuePtr)->intVar].back()->UseList.size());
+								//system("pause");
+							}
+						}
+					}
+					
+				}
+
 				if ((tmpIRPtr->UseList.size() == 0) && (tmpIRPtr->isHiddenRHS == false))
 				{
 
@@ -2196,6 +2220,7 @@ int main()
 			else ++it1;
 		}
 	}
+#pragma endregion
 
 	for (auto it1 : IRList)
 	{

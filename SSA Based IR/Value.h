@@ -30,6 +30,8 @@ public:
 
 	Value();
 
+	Value::Value(const Value& valRef);
+
 	Value(DWORD val, WORD size);
 
 	Value(string ValName, DWORD idx);
