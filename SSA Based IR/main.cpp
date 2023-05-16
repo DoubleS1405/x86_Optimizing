@@ -50,6 +50,8 @@ vector<Value*> RegValue[ZYDIS_REGISTER_MAX_VALUE];
 map<DWORD, vector<Value*>> MemValue;
 map<DWORD, vector<IR*>> IRList;
 
+Value* GetImmValue(DWORD _immValue, BYTE _size, vector<IR*>& irList);
+
 void findMemValue()
 {
 	for (auto testIt : IRList)
@@ -1035,47 +1037,72 @@ void SaveMemoryValue(ZydisRegister zydisRegister, Value* _regValue, BYTE _size, 
 					reg8hh = new IR(_regValue->Name, MemValue[_memAddr + 3].size(), IR::OPR::OPR_EXTRACT8HH, _regValue);
 				}
 				else
-					reg8hh = new IR(_regValue->Name, 0, IR::OPR::OPR_EXTRACT8HH, _regValue);
-
-				MemValue[_memAddr + 3].push_back(reg8hh);
+					reg8hh = new IR(IR::OPR::OPR_EXTRACT8HH, _regValue);
+				
 				irList.push_back(reg8hh);
+				offsetImm3 = GetImmValue(3, _size, irList);
+				offset3 = CraeteBinaryIR(BaseValue, offsetImm3, IR::OPR::OPR_ADD);
+				irList.push_back(offset3);			
+				rstIR3 = CraeteStoreIR(offset3, reg8hh, IR::OPR_STORE);
+				irList.push_back(rstIR3);
+
+				MemValue[_memAddr + 3].push_back(reg8hh);				
 
 				if (MemValue.find(_memAddr + 2) != MemValue.end())
 				{
 					reg8hlIR = new IR(_regValue->Name, MemValue[_memAddr + 2].size(), IR::OPR::OPR_EXTRACT8HL, _regValue);
 				}
 				else
-					reg8hlIR = new IR(_regValue->Name, 0, IR::OPR::OPR_EXTRACT8HL, _regValue);
+					reg8hlIR = new IR(IR::OPR::OPR_EXTRACT8HL, _regValue);
+
+				irList.push_back(reg8hlIR);
+				offsetImm2 = GetImmValue(2, _size, irList);
+				offset2 = CraeteBinaryIR(BaseValue, offsetImm2, IR::OPR::OPR_ADD);
+				irList.push_back(offset2);			
+				rstIR2 = CraeteStoreIR(offset2, reg8hlIR, IR::OPR_STORE);
+				irList.push_back(rstIR2);
 
 				MemValue[_memAddr + 2].push_back(reg8hlIR);
-				irList.push_back(reg8hlIR);
+				//irList.push_back(reg8hlIR);
 
 				if (MemValue.find(_memAddr + 1) != MemValue.end())
 				{
 					reg8hIR = new IR(_regValue->Name, MemValue[_memAddr + 1].size(), IR::OPR::OPR_EXTRACT8H, _regValue);
 				}
 				else
-					reg8hIR = new IR(_regValue->Name, 0, IR::OPR::OPR_EXTRACT8H, _regValue);
+					reg8hIR = new IR(IR::OPR::OPR_EXTRACT8H, _regValue);
+
+				irList.push_back(reg8hIR);
+				offsetImm1 = GetImmValue(1, _size, irList);
+				offset1 = CraeteBinaryIR(BaseValue, offsetImm1, IR::OPR::OPR_ADD);
+				irList.push_back(offset1);			
+				rstIR1 = CraeteStoreIR(offset1, reg8hIR, IR::OPR_STORE);
+				irList.push_back(rstIR1);
 
 				MemValue[_memAddr + 1].push_back(reg8hIR);
-				irList.push_back(reg8hIR);
+				//irList.push_back(reg8hIR);
 
 				if (MemValue.find(_memAddr) != MemValue.end())
 				{
 					reg8lIR = new IR(_regValue->Name, MemValue[_memAddr].size(), IR::OPR::OPR_EXTRACT8L, _regValue);
 				}
 				else
-					reg8lIR = new IR(_regValue->Name, 0, IR::OPR::OPR_EXTRACT8L, _regValue);
-				MemValue[_memAddr].push_back(reg8lIR);
+					reg8lIR = new IR(IR::OPR::OPR_EXTRACT8L, _regValue);
+				
 				irList.push_back(reg8lIR);
+				rstIR0 = CraeteStoreIR(BaseValue, reg8lIR, IR::OPR_STORE);
+				irList.push_back(rstIR0);
 
-				Value dasdg = *_regValue;
-				Value *Op2Test = new Value;
-				*Op2Test = dasdg;
+				MemValue[_memAddr].push_back(reg8lIR);
+				//irList.push_back(reg8lIR);
+
+				//Value dasdg = *_regValue;
+				//Value *Op2Test = new Value;
+				//*Op2Test = dasdg;
 				//Value tempValue = *_regValue;
-				rstIR = CraeteStoreIR(BaseValue, Op2Test, IR::OPR_STORE);
-				rstIR->isHiddenRHS = true;
-				irList.push_back(rstIR);
+				//rstIR = CraeteStoreIR(BaseValue, Op2Test, IR::OPR_STORE);
+				//rstIR->isHiddenRHS = true;
+				//irList.push_back(rstIR);
 			}
 		}
 
@@ -1229,21 +1256,21 @@ Value* GetImmValue(DWORD _immValue, BYTE _size, vector<IR*>& irList)
 	if (_size == 32)
 	{
 		immValue = CraeteBVVIR(_immValue, 32);
-		irList.push_back(immValue);
+		//irList.push_back(immValue);
 		return immValue;
 	}
 
 	if (_size == 16)
 	{
 		immValue = CraeteBVVIR(_immValue, 16);
-		irList.push_back(immValue);
+		//irList.push_back(immValue);
 		return immValue;
 	}
 
 	if (_size == 8)
 	{
 		immValue = CraeteBVVIR(_immValue, 8);
-		irList.push_back(immValue);
+		//irList.push_back(immValue);
 		return immValue;
 	}
 }
@@ -2094,10 +2121,25 @@ int main()
 					{
 						if (dynamic_cast<ConstInt*>(dynamic_cast<IR*>(tmpIRPtr->Operands[0]->valuePtr)->Operands[0]->valuePtr))
 						{
-							if (MemValue[dynamic_cast<ConstInt*>(dynamic_cast<IR*>(tmpIRPtr->Operands[0]->valuePtr)->Operands[0]->valuePtr)->intVar].back()->UseList.size() == 0)
+							//printf("[Dead Store Elimination] %s Use Count:%d\n", dynamic_cast<IR*>(tmpIRPtr->Operands[1]->valuePtr)->Name.c_str(), dynamic_cast<IR*>(tmpIRPtr->Operands[1]->valuePtr)->UseList.size());
+							Value *Op1IR = dynamic_cast<Value*>(tmpIRPtr->Operands[1]->valuePtr);
+							if(Op1IR && tmpIRPtr->Operands[1]->valuePtr->UseList.size() == 1)
+							//if (MemValue[dynamic_cast<ConstInt*>(dynamic_cast<IR*>(tmpIRPtr->Operands[0]->valuePtr)->Operands[0]->valuePtr)->intVar].back()->UseList.size() == 0)
 							{
-								//printf("[Dead Store Elimination] MemValue[dynamic_cast<ConstInt*>(dynamic_cast<IR*>(tmpIRPtr->Operands[0]->valuePtr)->Operands[0]->valuePtr)->intVar].back()->UseList.size() %d\n", MemValue[dynamic_cast<ConstInt*>(dynamic_cast<IR*>(tmpIRPtr->Operands[0]->valuePtr)->Operands[0]->valuePtr)->intVar].back()->UseList.size());
-								//system("pause");
+								for (set<OPERAND*>::iterator iter = tmpIRPtr->Operands[1]->valuePtr->UseList.begin(); iter != tmpIRPtr->Operands[1]->valuePtr->UseList.end(); iter++)
+								{
+									if (dynamic_cast<IR*>(dynamic_cast<OPERAND*>(*iter)->parent) == tmpIRPtr)
+									{
+										printf("[Dead Store Elimination] MemAddress %p Op1IR :%s(%s) %d\n",
+											dynamic_cast<ConstInt*>(dynamic_cast<IR*>(tmpIRPtr->Operands[0]->valuePtr)->Operands[0]->valuePtr)->intVar,
+											dynamic_cast<IR*>(dynamic_cast<OPERAND*>(*iter)->valuePtr)->Name.c_str(),
+											tmpIRPtr->Operands[1]->valuePtr->Name.c_str(),
+											dynamic_cast<IR*>(dynamic_cast<OPERAND*>(*iter)->valuePtr)->opr);
+										system("pause");
+									}
+								}
+
+
 							}
 						}
 					}

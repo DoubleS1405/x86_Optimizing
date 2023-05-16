@@ -57,6 +57,7 @@ IR* CraeteBinaryIR(Value* op1, Value* op2, IR::OPR _opr)
 IR* CraeteStoreIR(Value* op1, Value* op2, IR::OPR _opr)
 {
 	IR * testAddIR = new IR(IR::OPR_STORE, op1, op2);
+	testAddIR->Size = op1->Size;
 	testAddIR->isHiddenRHS = true;
 	return testAddIR;
 }

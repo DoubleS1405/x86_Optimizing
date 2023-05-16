@@ -11,6 +11,7 @@
 using namespace std;
 
 class OPERAND;
+class IR;
 
 class Value
 {
@@ -43,6 +44,7 @@ public:
 class OPERAND
 {
 public:
+	IR* parent;
 	Value* valuePtr;
 };
 
@@ -79,6 +81,7 @@ public:
 	OPERAND* AddOperand(Value *OperandValuePtr)
 	{
 		OPERAND* oprPtr = new OPERAND;
+		oprPtr->parent = this;
 		oprPtr->valuePtr = OperandValuePtr;
 		Operands.push_back(oprPtr);
 		OperandValuePtr->UseList.insert(oprPtr);
