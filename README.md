@@ -1,5 +1,5 @@
 # x86_Optimizing
-- Project Objective : Perform "optimization" on the x86 binary with the dummy code applied..<br>
+- Project Objective : Perform "optimization" on the x86 binary with the dummy code applied.<br>
 <br>
 
 # About the project
