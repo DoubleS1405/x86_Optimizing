@@ -965,7 +965,6 @@ void SaveMemoryValue(ZydisDecodedInstruction* decodedInstPtr, ZydisDecodedOperan
 					{
 						// rstIR0 = Load BaseValue
 						rstIR = CraeteStoreIR(BaseValue, _regValue, IR::OPR_STORE);
-						rstIR->isHiddenRHS = true;
 						irList.push_back(rstIR);
 					}
 				}
@@ -1040,8 +1039,9 @@ void SaveMemoryValue(ZydisRegister zydisRegister, Value* _regValue, BYTE _size, 
 					reg8hh = new IR(IR::OPR::OPR_EXTRACT8HH, _regValue);
 				
 				irList.push_back(reg8hh);
-				offsetImm3 = GetImmValue(3, _size, irList);
-				offset3 = CraeteBinaryIR(BaseValue, offsetImm3, IR::OPR::OPR_ADD);
+				//offsetImm3 = GetImmValue(3, _size, irList);
+				offset3 = CraeteBVVIR(_memAddr + 3, 32);
+				//offset3 = CraeteBinaryIR(BaseValue, offsetImm3, IR::OPR::OPR_ADD);
 				irList.push_back(offset3);			
 				rstIR3 = CraeteStoreIR(offset3, reg8hh, IR::OPR_STORE);
 				irList.push_back(rstIR3);
@@ -1057,7 +1057,7 @@ void SaveMemoryValue(ZydisRegister zydisRegister, Value* _regValue, BYTE _size, 
 
 				irList.push_back(reg8hlIR);
 				offsetImm2 = GetImmValue(2, _size, irList);
-				offset2 = CraeteBinaryIR(BaseValue, offsetImm2, IR::OPR::OPR_ADD);
+				offset2 = CraeteBVVIR(_memAddr + 2, 32); //CraeteBinaryIR(BaseValue, offsetImm2, IR::OPR::OPR_ADD);
 				irList.push_back(offset2);			
 				rstIR2 = CraeteStoreIR(offset2, reg8hlIR, IR::OPR_STORE);
 				irList.push_back(rstIR2);
@@ -1074,7 +1074,7 @@ void SaveMemoryValue(ZydisRegister zydisRegister, Value* _regValue, BYTE _size, 
 
 				irList.push_back(reg8hIR);
 				offsetImm1 = GetImmValue(1, _size, irList);
-				offset1 = CraeteBinaryIR(BaseValue, offsetImm1, IR::OPR::OPR_ADD);
+				offset1 = CraeteBVVIR(_memAddr + 1, 32); //CraeteBinaryIR(BaseValue, offsetImm1, IR::OPR::OPR_ADD);
 				irList.push_back(offset1);			
 				rstIR1 = CraeteStoreIR(offset1, reg8hIR, IR::OPR_STORE);
 				irList.push_back(rstIR1);
@@ -1277,7 +1277,6 @@ Value* GetImmValue(DWORD _immValue, BYTE _size, vector<IR*>& irList)
 
 Value* GetOperand(ZydisDecodedInstruction* _decodedInstPtr, ZydisDecodedOperand* _decodedOperandPtr, vector<IR*>& irList)
 {
-	printf("[GetOperand]\n");
 	switch (_decodedOperandPtr->type)
 	{
 	case ZYDIS_OPERAND_TYPE_REGISTER:
@@ -1469,6 +1468,21 @@ int CreateIR(ZydisDecodedInstruction* ptr_di, ZydisDecodedOperand* operandPTr, D
 	case ZYDIS_MNEMONIC_AAS:
 		break;
 	case ZYDIS_MNEMONIC_INC:
+		Op1= Op1 = GetOperand(ptr_di, &operandPTr[0], irList);
+		Op2 = GetImmValue(1, operandPTr[0].size, irList);
+
+		// 두 개의 오퍼랜드는 동일해야 한다.
+		if (Op1->Size != Op2->Size)
+		{
+			printf("ZYDIS_MNEMONIC_INC Error (Operand is not matched)\n");
+			return 0;
+		}
+		// Constant Folding 가능한 경우 CreateBinaryIR를 호출하지 않고 Imm Value 생성
+
+		// Constant Folding 가능 조건이 아닌 경우 IR 생성
+		rst = CraeteBinaryIR(Op1, Op2, IR::OPR::OPR_ADD);
+		irList.push_back(rst);
+
 		break;
 	case ZYDIS_MNEMONIC_DEC:
 		break;
@@ -2123,30 +2137,50 @@ int main()
 						{
 							//printf("[Dead Store Elimination] %s Use Count:%d\n", dynamic_cast<IR*>(tmpIRPtr->Operands[1]->valuePtr)->Name.c_str(), dynamic_cast<IR*>(tmpIRPtr->Operands[1]->valuePtr)->UseList.size());
 							Value *Op1IR = dynamic_cast<Value*>(tmpIRPtr->Operands[1]->valuePtr);
-							if(Op1IR && tmpIRPtr->Operands[1]->valuePtr->UseList.size() == 1)
-							//if (MemValue[dynamic_cast<ConstInt*>(dynamic_cast<IR*>(tmpIRPtr->Operands[0]->valuePtr)->Operands[0]->valuePtr)->intVar].back()->UseList.size() == 0)
+							if (Op1IR && tmpIRPtr->Operands[1]->valuePtr->UseList.size() == 1)
+								//if (MemValue[dynamic_cast<ConstInt*>(dynamic_cast<IR*>(tmpIRPtr->Operands[0]->valuePtr)->Operands[0]->valuePtr)->intVar].back()->UseList.size() == 0)
 							{
-								for (set<OPERAND*>::iterator iter = tmpIRPtr->Operands[1]->valuePtr->UseList.begin(); iter != tmpIRPtr->Operands[1]->valuePtr->UseList.end(); iter++)
+								set<OPERAND*>::iterator iter = Op1IR->UseList.begin();
 								{
 									if (dynamic_cast<IR*>(dynamic_cast<OPERAND*>(*iter)->parent) == tmpIRPtr)
 									{
-										printf("[Dead Store Elimination] MemAddress %p Op1IR :%s(%s) %d\n",
-											dynamic_cast<ConstInt*>(dynamic_cast<IR*>(tmpIRPtr->Operands[0]->valuePtr)->Operands[0]->valuePtr)->intVar,
-											dynamic_cast<IR*>(dynamic_cast<OPERAND*>(*iter)->valuePtr)->Name.c_str(),
-											tmpIRPtr->Operands[1]->valuePtr->Name.c_str(),
-											dynamic_cast<IR*>(dynamic_cast<OPERAND*>(*iter)->valuePtr)->opr);
+										printf("[Dead Store Elimination] MemAddress %p\n",
+											dynamic_cast<ConstInt*>(dynamic_cast<IR*>(tmpIRPtr->Operands[0]->valuePtr)->Operands[0]->valuePtr)->intVar);
+
+										if (tmpIRPtr->Operands[0]->valuePtr->UseList.find(tmpIRPtr->Operands[0]) != tmpIRPtr->Operands[0]->valuePtr->UseList.end())
+										{
+											//printf("Before Remove this IR's Operand 1 %d\n", tmpIRPtr->Operands[0]->valuePtr->UseList.size());
+											tmpIRPtr->Operands[0]->valuePtr->UseList.erase(tmpIRPtr->Operands[0]);
+											//printf("After Remove this IR's Operand 1 %d\n", tmpIRPtr->Operands[0]->valuePtr->UseList.size());
+										}
+
+										if (tmpIRPtr->Operands[1]->valuePtr->UseList.find(tmpIRPtr->Operands[1]) != tmpIRPtr->Operands[1]->valuePtr->UseList.end())
+										{
+											//printf("Before Remove this IR's Operand 2 %d\n", tmpIRPtr->Operands[1]->valuePtr->UseList.size());
+											tmpIRPtr->Operands[1]->valuePtr->UseList.erase(tmpIRPtr->Operands[1]);
+											//printf("After Remove this IR's Operand 2 %d\n", tmpIRPtr->Operands[1]->valuePtr->UseList.size());
+										}
+										it = it1->second.erase(it);
+										//it++;
 										system("pause");
 									}
+									else
+										++it;
 								}
 
 
 							}
+							else
+								++it;
 						}
+						else
+							++it;
 					}
-					
+					else
+						++it;
 				}
 
-				if ((tmpIRPtr->UseList.size() == 0) && (tmpIRPtr->isHiddenRHS == false))
+				else if ((tmpIRPtr->UseList.size() == 0) && (tmpIRPtr->isHiddenRHS == false))
 				{
 
 					for (auto memPoolItr : MemValue)
@@ -2185,8 +2219,10 @@ int main()
 						tmpIRPtr != RegValue[REG_EDI_8H].back() &&
 						tmpIRPtr != RegValue[REG_EDI_8L].back())
 					{
+
 						if (tmpIRPtr->Operands.size() > 0)
 							printf("Daed Store %p %s %d %s\n", it1->first, tmpIRPtr->Name.c_str(), tmpIRPtr->Operands.size(), tmpIRPtr->Operands[0]->valuePtr->Name.c_str());
+
 						if (tmpIRPtr->Operands.size() == 1)
 						{
 							if (tmpIRPtr->Operands[0]->valuePtr->UseList.find(tmpIRPtr->Operands[0]) != tmpIRPtr->Operands[0]->valuePtr->UseList.end())
@@ -2199,11 +2235,13 @@ int main()
 
 						else if (tmpIRPtr->Operands.size() == 2)
 						{
+							//printf("[DSE ] Operands.size() == 2 %s\n", tmpIRPtr->Name.c_str());
+							
 							if (tmpIRPtr->Operands[0]->valuePtr->UseList.find(tmpIRPtr->Operands[0]) != tmpIRPtr->Operands[0]->valuePtr->UseList.end())
 							{
 								//printf("Before Remove this IR's Operand 1 %d\n", tmpIRPtr->Operands[0]->valuePtr->UseList.size());
-								tmpIRPtr->Operands[0]->valuePtr->UseList.erase(tmpIRPtr->Operands[0]);
-								//printf("After Remove this IR's Operand 1 %d\n", tmpIRPtr->Operands[0]->valuePtr->UseList.size());
+								tmpIRPtr->Operands[0]->valuePtr->UseList.erase(tmpIRPtr->Operands[0]);								
+								//printf("After Remove this IR's Operand 1 %s Opsize %d %d\n", tmpIRPtr->Operands[0]->valuePtr->Name.c_str(), dynamic_cast<IR*>(tmpIRPtr->Operands[0]->valuePtr)->Operands.size(),tmpIRPtr->Operands[0]->valuePtr->UseList.size());
 							}
 
 							if (tmpIRPtr->Operands[1]->valuePtr->UseList.find(tmpIRPtr->Operands[1]) != tmpIRPtr->Operands[1]->valuePtr->UseList.end())
@@ -2212,6 +2250,7 @@ int main()
 								tmpIRPtr->Operands[1]->valuePtr->UseList.erase(tmpIRPtr->Operands[1]);
 								//printf("After Remove this IR's Operand 2 %d\n", tmpIRPtr->Operands[1]->valuePtr->UseList.size());
 							}
+							//system("pause");
 						}
 
 						else if (tmpIRPtr->Operands.size() == 3)

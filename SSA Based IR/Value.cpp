@@ -36,7 +36,7 @@ IR* CraeteBVVIR(DWORD intVal, BYTE size)
 	Value* op1 = new ConstInt(IR::OPR_GET32INT, intVal);
 	Value* op2 = new ConstInt(IR::OPR_GET8INT, size);
 	IR * testAddIR = new IR(IR::OPR_BVV, op1, op2, size);
-	testAddIR->isHiddenRHS = true;
+	//testAddIR->isHiddenRHS = true;
 	return testAddIR;
 }
 
