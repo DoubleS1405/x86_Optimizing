@@ -115,3 +115,19 @@ void ConcatOptimize(Value* concatValue)
 		}
 	}
 }
+
+bool isConstantFolding(Value* _op1, Value* _op2)
+{
+	IR* op1IR = nullptr;
+	IR* op2IR = nullptr;
+
+	op1IR = dynamic_cast<IR*>(_op1);
+	op2IR = dynamic_cast<IR*>(_op2);
+
+	if (op1IR && op2IR)
+	{
+		if (op1IR->opr == IR::OPR::OPR_BVV && op1IR->opr == IR::OPR::OPR_BVV)
+			return true;
+	}
+	return false;
+}

@@ -1335,9 +1335,18 @@ int CreateIR(ZydisDecodedInstruction* ptr_di, ZydisDecodedOperand* operandPTr, D
 			return 0;
 		}
 		// Constant Folding 가능한 경우 CreateBinaryIR를 호출하지 않고 Imm Value 생성
-
+		if (isConstantFolding(Op1, Op2))
+		{		
+			rst = CraeteBVVIR( dynamic_cast<ConstInt*>(dynamic_cast<IR*>(Op1)->Operands[0]->valuePtr)->intVar + dynamic_cast<ConstInt*>(dynamic_cast<IR*>(Op2)->Operands[0]->valuePtr)->intVar, 32);
+			printf("ADD Operand can constant folding %x + %x = %x\n", dynamic_cast<ConstInt*>(dynamic_cast<IR*>(Op1)->Operands[0]->valuePtr)->intVar,
+				dynamic_cast<ConstInt*>(dynamic_cast<IR*>(Op2)->Operands[0]->valuePtr)->intVar,
+				dynamic_cast<ConstInt*>(dynamic_cast<IR*>(Op1)->Operands[0]->valuePtr)->intVar + dynamic_cast<ConstInt*>(dynamic_cast<IR*>(Op2)->Operands[0]->valuePtr)->intVar);
+		}
 		// Constant Folding 가능 조건이 아닌 경우 IR 생성
-		rst = CraeteBinaryIR(Op1, Op2, IR::OPR::OPR_ADD);
+		else
+		{
+			rst = CraeteBinaryIR(Op1, Op2, IR::OPR::OPR_ADD);
+		}
 		irList.push_back(rst);
 
 		// EFLAG 관련 IR 추가

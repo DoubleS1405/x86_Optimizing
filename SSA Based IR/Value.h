@@ -180,3 +180,5 @@ IR* CraeteBinaryIR(Value* op1, Value* op2, IR::OPR _opr);
 IR* CraeteStoreIR(Value* op1, Value* op2, IR::OPR _opr);
 
 IR* CraeteBVVIR(DWORD intVal, BYTE size);
+
+bool isConstantFolding(Value* _op1, Value* _op2);
