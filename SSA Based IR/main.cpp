@@ -121,6 +121,28 @@ void SaveRegisterValue(ZydisRegister _zydisReg, Value* _regValue, BYTE _size, ve
 			break;
 
 		case ZYDIS_REGISTER_EBX:
+			if (dynamic_cast<IR*>(_regValue))
+			{
+				if (dynamic_cast<IR*>(_regValue)->opr == IR::OPR::OPR_BVV)
+				{
+					op1ConstValue = (dynamic_cast<ConstInt*>(dynamic_cast<IR*>(_regValue)->Operands[0]->valuePtr)->intVar & 0xffff0000) >> 16;
+					reg16hIR = CraeteBVVIR(op1ConstValue, 16);
+					RegValue[REG_EBX_16H].push_back(reg16hIR);
+					irList.push_back(reg16hIR);
+
+					op2ConstValue = (dynamic_cast<ConstInt*>(dynamic_cast<IR*>(_regValue)->Operands[0]->valuePtr)->intVar & 0xff00) >> 8;
+					reg8hIR = CraeteBVVIR(op2ConstValue, 8);
+					RegValue[REG_EBX_8H].push_back(reg8hIR);
+					irList.push_back(reg8hIR);
+
+					op3ConstValue = (dynamic_cast<ConstInt*>(dynamic_cast<IR*>(_regValue)->Operands[0]->valuePtr)->intVar & 0xff);
+					reg8lIR = CraeteBVVIR(op3ConstValue, 8);
+					RegValue[REG_EBX_8L].push_back(reg8lIR);
+					irList.push_back(reg8lIR);
+
+					return;
+				}
+			}
 			reg16hIR = new IR("EBX16H", RegValue[REG_EBX_16H].size(), IR::OPR::OPR_EXTRACT16H, _regValue);
 			RegValue[REG_EBX_16H].push_back(reg16hIR);
 			irList.push_back(reg16hIR);
@@ -135,6 +157,28 @@ void SaveRegisterValue(ZydisRegister _zydisReg, Value* _regValue, BYTE _size, ve
 			break;
 
 		case ZYDIS_REGISTER_ECX:
+			if (dynamic_cast<IR*>(_regValue))
+			{
+				if (dynamic_cast<IR*>(_regValue)->opr == IR::OPR::OPR_BVV)
+				{
+					op1ConstValue = (dynamic_cast<ConstInt*>(dynamic_cast<IR*>(_regValue)->Operands[0]->valuePtr)->intVar & 0xffff0000) >> 16;
+					reg16hIR = CraeteBVVIR(op1ConstValue, 16);
+					RegValue[REG_ECX_16H].push_back(reg16hIR);
+					irList.push_back(reg16hIR);
+
+					op2ConstValue = (dynamic_cast<ConstInt*>(dynamic_cast<IR*>(_regValue)->Operands[0]->valuePtr)->intVar & 0xff00) >> 8;
+					reg8hIR = CraeteBVVIR(op2ConstValue, 8);
+					RegValue[REG_ECX_8H].push_back(reg8hIR);
+					irList.push_back(reg8hIR);
+
+					op3ConstValue = (dynamic_cast<ConstInt*>(dynamic_cast<IR*>(_regValue)->Operands[0]->valuePtr)->intVar & 0xff);
+					reg8lIR = CraeteBVVIR(op3ConstValue, 8);
+					RegValue[REG_ECX_8L].push_back(reg8lIR);
+					irList.push_back(reg8lIR);
+
+					return;
+				}
+			}
 			reg16hIR = new IR("ECX16H", RegValue[REG_ECX_16H].size(), IR::OPR::OPR_EXTRACT16H, _regValue);
 			RegValue[REG_ECX_16H].push_back(reg16hIR);
 			irList.push_back(reg16hIR);
@@ -149,6 +193,28 @@ void SaveRegisterValue(ZydisRegister _zydisReg, Value* _regValue, BYTE _size, ve
 			break;
 
 		case ZYDIS_REGISTER_EDX:
+			if (dynamic_cast<IR*>(_regValue))
+			{
+				if (dynamic_cast<IR*>(_regValue)->opr == IR::OPR::OPR_BVV)
+				{
+					op1ConstValue = (dynamic_cast<ConstInt*>(dynamic_cast<IR*>(_regValue)->Operands[0]->valuePtr)->intVar & 0xffff0000) >> 16;
+					reg16hIR = CraeteBVVIR(op1ConstValue, 16);
+					RegValue[REG_EDX_16H].push_back(reg16hIR);
+					irList.push_back(reg16hIR);
+
+					op2ConstValue = (dynamic_cast<ConstInt*>(dynamic_cast<IR*>(_regValue)->Operands[0]->valuePtr)->intVar & 0xff00) >> 8;
+					reg8hIR = CraeteBVVIR(op2ConstValue, 8);
+					RegValue[REG_EDX_8H].push_back(reg8hIR);
+					irList.push_back(reg8hIR);
+
+					op3ConstValue = (dynamic_cast<ConstInt*>(dynamic_cast<IR*>(_regValue)->Operands[0]->valuePtr)->intVar & 0xff);
+					reg8lIR = CraeteBVVIR(op3ConstValue, 8);
+					RegValue[REG_EDX_8L].push_back(reg8lIR);
+					irList.push_back(reg8lIR);
+
+					return;
+				}
+			}
 			reg16hIR = new IR("EDX16H", RegValue[REG_EDX_16H].size(), IR::OPR::OPR_EXTRACT16H, _regValue);
 			RegValue[REG_EDX_16H].push_back(reg16hIR);
 			irList.push_back(reg16hIR);
@@ -163,6 +229,28 @@ void SaveRegisterValue(ZydisRegister _zydisReg, Value* _regValue, BYTE _size, ve
 			break;
 
 		case ZYDIS_REGISTER_EBP:
+			if (dynamic_cast<IR*>(_regValue))
+			{
+				if (dynamic_cast<IR*>(_regValue)->opr == IR::OPR::OPR_BVV)
+				{
+					op1ConstValue = (dynamic_cast<ConstInt*>(dynamic_cast<IR*>(_regValue)->Operands[0]->valuePtr)->intVar & 0xffff0000) >> 16;
+					reg16hIR = CraeteBVVIR(op1ConstValue, 16);
+					RegValue[REG_EBP_16H].push_back(reg16hIR);
+					irList.push_back(reg16hIR);
+
+					op2ConstValue = (dynamic_cast<ConstInt*>(dynamic_cast<IR*>(_regValue)->Operands[0]->valuePtr)->intVar & 0xff00) >> 8;
+					reg8hIR = CraeteBVVIR(op2ConstValue, 8);
+					RegValue[REG_EBP_8H].push_back(reg8hIR);
+					irList.push_back(reg8hIR);
+
+					op3ConstValue = (dynamic_cast<ConstInt*>(dynamic_cast<IR*>(_regValue)->Operands[0]->valuePtr)->intVar & 0xff);
+					reg8lIR = CraeteBVVIR(op3ConstValue, 8);
+					RegValue[REG_EBP_8L].push_back(reg8lIR);
+					irList.push_back(reg8lIR);
+
+					return;
+				}
+			}
 			reg16hIR = new IR("EBP16H", RegValue[REG_EBP_16H].size(), IR::OPR::OPR_EXTRACT16H, _regValue);
 			RegValue[REG_EBP_16H].push_back(reg16hIR);
 			irList.push_back(reg16hIR);
@@ -176,7 +264,65 @@ void SaveRegisterValue(ZydisRegister _zydisReg, Value* _regValue, BYTE _size, ve
 			irList.push_back(reg8lIR);
 			break;
 
+		//case ZYDIS_REGISTER_ESP:
+		//	if (dynamic_cast<IR*>(_regValue))
+		//	{
+		//		if (dynamic_cast<IR*>(_regValue)->opr == IR::OPR::OPR_BVV)
+		//		{
+		//			op1ConstValue = (dynamic_cast<ConstInt*>(dynamic_cast<IR*>(_regValue)->Operands[0]->valuePtr)->intVar & 0xffff0000) >> 16;
+		//			reg16hIR = CraeteBVVIR(op1ConstValue, 16);
+		//			RegValue[REG_ESP_16H].push_back(reg16hIR);
+		//			irList.push_back(reg16hIR);
+
+		//			op2ConstValue = (dynamic_cast<ConstInt*>(dynamic_cast<IR*>(_regValue)->Operands[0]->valuePtr)->intVar & 0xff00) >> 8;
+		//			reg8hIR = CraeteBVVIR(op2ConstValue, 8);
+		//			RegValue[REG_ESP_8H].push_back(reg8hIR);
+		//			irList.push_back(reg8hIR);
+
+		//			op3ConstValue = (dynamic_cast<ConstInt*>(dynamic_cast<IR*>(_regValue)->Operands[0]->valuePtr)->intVar & 0xff);
+		//			reg8lIR = CraeteBVVIR(op3ConstValue, 8);
+		//			RegValue[REG_ESP_8L].push_back(reg8lIR);
+		//			irList.push_back(reg8lIR);
+
+		//			return;
+		//		}
+		//	}
+		//	reg16hIR = new IR("ESP16H", RegValue[REG_ESP_16H].size(), IR::OPR::OPR_EXTRACT16H, _regValue);
+		//	RegValue[REG_ESP_16H].push_back(reg16hIR);
+		//	irList.push_back(reg16hIR);
+
+		//	reg8hIR = new IR("ESP8H", RegValue[REG_ESP_8H].size(), IR::OPR::OPR_EXTRACT8H, _regValue);
+		//	RegValue[REG_ESP_8H].push_back(reg8hIR);
+		//	irList.push_back(reg8hIR);
+
+		//	reg8lIR = new IR("ESP8L", RegValue[REG_ESP_8L].size(), IR::OPR::OPR_EXTRACT8L, _regValue);
+		//	RegValue[REG_ESP_8L].push_back(reg8lIR);
+		//	irList.push_back(reg8lIR);
+		//	break;
+
 		case ZYDIS_REGISTER_ESI:
+			if (dynamic_cast<IR*>(_regValue))
+			{
+				if (dynamic_cast<IR*>(_regValue)->opr == IR::OPR::OPR_BVV)
+				{
+					op1ConstValue = (dynamic_cast<ConstInt*>(dynamic_cast<IR*>(_regValue)->Operands[0]->valuePtr)->intVar & 0xffff0000) >> 16;
+					reg16hIR = CraeteBVVIR(op1ConstValue, 16);
+					RegValue[REG_ESI_16H].push_back(reg16hIR);
+					irList.push_back(reg16hIR);
+
+					op2ConstValue = (dynamic_cast<ConstInt*>(dynamic_cast<IR*>(_regValue)->Operands[0]->valuePtr)->intVar & 0xff00) >> 8;
+					reg8hIR = CraeteBVVIR(op2ConstValue, 8);
+					RegValue[REG_ESI_8H].push_back(reg8hIR);
+					irList.push_back(reg8hIR);
+
+					op3ConstValue = (dynamic_cast<ConstInt*>(dynamic_cast<IR*>(_regValue)->Operands[0]->valuePtr)->intVar & 0xff);
+					reg8lIR = CraeteBVVIR(op3ConstValue, 8);
+					RegValue[REG_ESI_8L].push_back(reg8lIR);
+					irList.push_back(reg8lIR);
+
+					return;
+				}
+			}
 			reg16hIR = new IR("ESI16H", RegValue[REG_ESI_16H].size(), IR::OPR::OPR_EXTRACT16H, _regValue);
 			RegValue[REG_ESI_16H].push_back(reg16hIR);
 			irList.push_back(reg16hIR);
@@ -191,6 +337,28 @@ void SaveRegisterValue(ZydisRegister _zydisReg, Value* _regValue, BYTE _size, ve
 			break;
 
 		case ZYDIS_REGISTER_EDI:
+			if (dynamic_cast<IR*>(_regValue))
+			{
+				if (dynamic_cast<IR*>(_regValue)->opr == IR::OPR::OPR_BVV)
+				{
+					op1ConstValue = (dynamic_cast<ConstInt*>(dynamic_cast<IR*>(_regValue)->Operands[0]->valuePtr)->intVar & 0xffff0000) >> 16;
+					reg16hIR = CraeteBVVIR(op1ConstValue, 16);
+					RegValue[REG_EDI_16H].push_back(reg16hIR);
+					irList.push_back(reg16hIR);
+
+					op2ConstValue = (dynamic_cast<ConstInt*>(dynamic_cast<IR*>(_regValue)->Operands[0]->valuePtr)->intVar & 0xff00) >> 8;
+					reg8hIR = CraeteBVVIR(op2ConstValue, 8);
+					RegValue[REG_EDI_8H].push_back(reg8hIR);
+					irList.push_back(reg8hIR);
+
+					op3ConstValue = (dynamic_cast<ConstInt*>(dynamic_cast<IR*>(_regValue)->Operands[0]->valuePtr)->intVar & 0xff);
+					reg8lIR = CraeteBVVIR(op3ConstValue, 8);
+					RegValue[REG_EDI_8L].push_back(reg8lIR);
+					irList.push_back(reg8lIR);
+
+					return;
+				}
+			}
 			reg16hIR = new IR("EDI16H", RegValue[REG_EDI_16H].size(), IR::OPR::OPR_EXTRACT16H, _regValue);
 			RegValue[REG_EDI_16H].push_back(reg16hIR);
 			irList.push_back(reg16hIR);
@@ -939,43 +1107,58 @@ void SaveMemoryValue(ZydisDecodedInstruction* decodedInstPtr, ZydisDecodedOperan
 								reg8hh = new IR(_regValue->Name, MemValue[_memAddr + 3].size(), IR::OPR::OPR_EXTRACT8HH, _regValue);
 							}
 							else
-								reg8hh = new IR(_regValue->Name, 0, IR::OPR::OPR_EXTRACT8HH, _regValue);
+								reg8hh = new IR(IR::OPR::OPR_EXTRACT8HH, _regValue);
 
-							MemValue[_memAddr + 3].push_back(reg8hh);
 							irList.push_back(reg8hh);
+							offset3 = CraeteBVVIR(_memAddr + 3, 32);
+							//offset3 = CraeteBinaryIR(BaseValue, offsetImm3, IR::OPR::OPR_ADD);
+							irList.push_back(offset3);
+							rstIR3 = CraeteStoreIR(offset3, reg8hh, IR::OPR_STORE);
+							irList.push_back(rstIR3);
+							MemValue[_memAddr + 3].push_back(reg8hh);
 
 							if (MemValue.find(_memAddr + 2) != MemValue.end())
 							{
 								reg8hlIR = new IR(_regValue->Name, MemValue[_memAddr + 2].size(), IR::OPR::OPR_EXTRACT8HL, _regValue);
 							}
 							else
-								reg8hlIR = new IR(_regValue->Name, 0, IR::OPR::OPR_EXTRACT8HL, _regValue);
+								reg8hlIR = new IR(IR::OPR::OPR_EXTRACT8HL, _regValue);
 
-							MemValue[_memAddr + 2].push_back(reg8hlIR);
 							irList.push_back(reg8hlIR);
-
+							offset2 = CraeteBVVIR(_memAddr + 2, 32);
+							//offset3 = CraeteBinaryIR(BaseValue, offsetImm3, IR::OPR::OPR_ADD);
+							irList.push_back(offset2);
+							rstIR2 = CraeteStoreIR(offset2, reg8hlIR, IR::OPR_STORE);
+							irList.push_back(rstIR2);
+							MemValue[_memAddr + 2].push_back(reg8hlIR);
+							
 							if (MemValue.find(_memAddr + 1) != MemValue.end())
 							{
 								reg8hIR = new IR(_regValue->Name, MemValue[_memAddr + 1].size(), IR::OPR::OPR_EXTRACT8H, _regValue);
 							}
 							else
-								reg8hIR = new IR(_regValue->Name, 0, IR::OPR::OPR_EXTRACT8H, _regValue);
+								reg8hIR = new IR(IR::OPR::OPR_EXTRACT8H, _regValue);
 
-							MemValue[_memAddr + 1].push_back(reg8hIR);
 							irList.push_back(reg8hIR);
-
+							offset1 = CraeteBVVIR(_memAddr + 1, 32);
+							//offset3 = CraeteBinaryIR(BaseValue, offsetImm3, IR::OPR::OPR_ADD);
+							irList.push_back(offset1);
+							rstIR1 = CraeteStoreIR(offset1, reg8hIR, IR::OPR_STORE);
+							irList.push_back(rstIR1);
+							MemValue[_memAddr + 1].push_back(reg8hIR);
+							
 							if (MemValue.find(_memAddr) != MemValue.end())
 							{
 								reg8lIR = new IR(_regValue->Name, MemValue[_memAddr].size(), IR::OPR::OPR_EXTRACT8L, _regValue);
 							}
 							else
-								reg8lIR = new IR(_regValue->Name, 0, IR::OPR::OPR_EXTRACT8L, _regValue);
+								reg8lIR = new IR(IR::OPR::OPR_EXTRACT8L, _regValue);
 							MemValue[_memAddr].push_back(reg8lIR);
 							irList.push_back(reg8lIR);
 
 							Value tempValue = *_regValue;
 							Value Op2Value2 = tempValue;
-							rstIR = CraeteStoreIR(BaseValue, &Op2Value2, IR::OPR_STORE);
+							rstIR = CraeteStoreIR(BaseValue, _regValue, IR::OPR_STORE);
 							rstIR->isHiddenRHS = true;
 							irList.push_back(rstIR);
 						}
@@ -1059,16 +1242,16 @@ void SaveMemoryValue(ZydisRegister zydisRegister, Value* _regValue, BYTE _size, 
 				}
 				else
 					reg8hh = new IR(IR::OPR::OPR_EXTRACT8HH, _regValue);
-				
+
 				irList.push_back(reg8hh);
 				//offsetImm3 = GetImmValue(3, _size, irList);
 				offset3 = CraeteBVVIR(_memAddr + 3, 32);
 				//offset3 = CraeteBinaryIR(BaseValue, offsetImm3, IR::OPR::OPR_ADD);
-				irList.push_back(offset3);			
+				irList.push_back(offset3);
 				rstIR3 = CraeteStoreIR(offset3, reg8hh, IR::OPR_STORE);
 				irList.push_back(rstIR3);
 
-				MemValue[_memAddr + 3].push_back(reg8hh);				
+				MemValue[_memAddr + 3].push_back(reg8hh);
 
 				if (MemValue.find(_memAddr + 2) != MemValue.end())
 				{
@@ -1080,7 +1263,7 @@ void SaveMemoryValue(ZydisRegister zydisRegister, Value* _regValue, BYTE _size, 
 				irList.push_back(reg8hlIR);
 				offsetImm2 = GetImmValue(2, _size, irList);
 				offset2 = CraeteBVVIR(_memAddr + 2, 32); //CraeteBinaryIR(BaseValue, offsetImm2, IR::OPR::OPR_ADD);
-				irList.push_back(offset2);			
+				irList.push_back(offset2);
 				rstIR2 = CraeteStoreIR(offset2, reg8hlIR, IR::OPR_STORE);
 				irList.push_back(rstIR2);
 
@@ -1097,7 +1280,7 @@ void SaveMemoryValue(ZydisRegister zydisRegister, Value* _regValue, BYTE _size, 
 				irList.push_back(reg8hIR);
 				offsetImm1 = GetImmValue(1, _size, irList);
 				offset1 = CraeteBVVIR(_memAddr + 1, 32); //CraeteBinaryIR(BaseValue, offsetImm1, IR::OPR::OPR_ADD);
-				irList.push_back(offset1);			
+				irList.push_back(offset1);
 				rstIR1 = CraeteStoreIR(offset1, reg8hIR, IR::OPR_STORE);
 				irList.push_back(rstIR1);
 
@@ -1110,7 +1293,7 @@ void SaveMemoryValue(ZydisRegister zydisRegister, Value* _regValue, BYTE _size, 
 				}
 				else
 					reg8lIR = new IR(IR::OPR::OPR_EXTRACT8L, _regValue);
-				
+
 				irList.push_back(reg8lIR);
 				rstIR0 = CraeteStoreIR(BaseValue, reg8lIR, IR::OPR_STORE);
 				irList.push_back(rstIR0);
@@ -1210,8 +1393,8 @@ Value* GetMemoryValue(ZydisDecodedInstruction* decodedInstPtr, ZydisDecodedOpera
 						// 메모리 주소로부터 0부터 3바이트 주소에 대한 Memory Value Pool이 모두 존재해야 함
 						if (MemValue.find(dynamic_cast<ConstInt*>(dynamic_cast<IR*>(BaseValue)->Operands[0]->valuePtr)->intVar) != MemValue.end() &&
 							MemValue.find(dynamic_cast<ConstInt*>(dynamic_cast<IR*>(BaseValue)->Operands[0]->valuePtr)->intVar + 1) != MemValue.end() &&
-							MemValue.find(dynamic_cast<ConstInt*>(dynamic_cast<IR*>(BaseValue)->Operands[0]->valuePtr)->intVar  + 2) != MemValue.end() &&
-							MemValue.find(dynamic_cast<ConstInt*>(dynamic_cast<IR*>(BaseValue)->Operands[0]->valuePtr)->intVar  + 3) != MemValue.end())
+							MemValue.find(dynamic_cast<ConstInt*>(dynamic_cast<IR*>(BaseValue)->Operands[0]->valuePtr)->intVar + 2) != MemValue.end() &&
+							MemValue.find(dynamic_cast<ConstInt*>(dynamic_cast<IR*>(BaseValue)->Operands[0]->valuePtr)->intVar + 3) != MemValue.end())
 						{
 							printf("test\n");
 							offset0Value = MemValue[(dynamic_cast<ConstInt*>(dynamic_cast<IR*>(BaseValue)->Operands[0]->valuePtr)->intVar)].back();
@@ -1482,7 +1665,7 @@ int CreateIR(ZydisDecodedInstruction* ptr_di, ZydisDecodedOperand* operandPTr, D
 	case ZYDIS_MNEMONIC_AAS:
 		break;
 	case ZYDIS_MNEMONIC_INC:
-		Op1= Op1 = GetOperand(ptr_di, &operandPTr[0], irList);
+		Op1 = Op1 = GetOperand(ptr_di, &operandPTr[0], irList);
 		Op2 = GetImmValue(1, operandPTr[0].size, irList);
 
 		// 두 개의 오퍼랜드는 동일해야 한다.
@@ -2105,7 +2288,7 @@ int main()
 		length += g_inst.length;
 	}
 
-	printf("MemValue.size() :%d\n", MemValue.rbegin()->second.size() );
+	printf("MemValue.size() :%d\n", MemValue.rbegin()->second.size());
 	system("pause");
 
 	int cnt = 0;
@@ -2250,11 +2433,11 @@ int main()
 						else if (tmpIRPtr->Operands.size() == 2)
 						{
 							//printf("[DSE ] Operands.size() == 2 %s\n", tmpIRPtr->Name.c_str());
-							
+
 							if (tmpIRPtr->Operands[0]->valuePtr->UseList.find(tmpIRPtr->Operands[0]) != tmpIRPtr->Operands[0]->valuePtr->UseList.end())
 							{
 								//printf("Before Remove this IR's Operand 1 %d\n", tmpIRPtr->Operands[0]->valuePtr->UseList.size());
-								tmpIRPtr->Operands[0]->valuePtr->UseList.erase(tmpIRPtr->Operands[0]);								
+								tmpIRPtr->Operands[0]->valuePtr->UseList.erase(tmpIRPtr->Operands[0]);
 								//printf("After Remove this IR's Operand 1 %s Opsize %d %d\n", tmpIRPtr->Operands[0]->valuePtr->Name.c_str(), dynamic_cast<IR*>(tmpIRPtr->Operands[0]->valuePtr)->Operands.size(),tmpIRPtr->Operands[0]->valuePtr->UseList.size());
 							}
 
