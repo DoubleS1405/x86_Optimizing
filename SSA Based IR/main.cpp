@@ -85,6 +85,28 @@ void SaveRegisterValue(ZydisRegister _zydisReg, Value* _regValue, BYTE _size, ve
 		switch (_zydisReg)
 		{
 		case ZYDIS_REGISTER_EAX:
+			if (dynamic_cast<IR*>(_regValue))
+			{
+				if (dynamic_cast<IR*>(_regValue)->opr == IR::OPR::OPR_BVV)
+				{
+					op1ConstValue = (dynamic_cast<ConstInt*>(dynamic_cast<IR*>(_regValue)->Operands[0]->valuePtr)->intVar & 0xffff0000) >> 16;
+					reg16hIR = CraeteBVVIR(op1ConstValue, 16);
+					RegValue[REG_EAX_16H].push_back(reg16hIR);
+					irList.push_back(reg16hIR);
+
+					op2ConstValue = (dynamic_cast<ConstInt*>(dynamic_cast<IR*>(_regValue)->Operands[0]->valuePtr)->intVar & 0xff00) >> 8;
+					reg8hIR = CraeteBVVIR(op2ConstValue, 8);
+					RegValue[REG_EAX_8H].push_back(reg8hIR);
+					irList.push_back(reg8hIR);
+
+					op3ConstValue = (dynamic_cast<ConstInt*>(dynamic_cast<IR*>(_regValue)->Operands[0]->valuePtr)->intVar & 0xff);
+					reg8lIR = CraeteBVVIR(op3ConstValue, 8);
+					RegValue[REG_EAX_8L].push_back(reg8lIR);
+					irList.push_back(reg8lIR);
+
+					return;
+				}
+			}
 			reg16hIR = new IR("EAX16H", RegValue[REG_EAX_16H].size(), IR::OPR::OPR_EXTRACT16H, _regValue);
 			RegValue[REG_EAX_16H].push_back(reg16hIR);
 			irList.push_back(reg16hIR);
@@ -1184,6 +1206,7 @@ Value* GetMemoryValue(ZydisDecodedInstruction* decodedInstPtr, ZydisDecodedOpera
 					// Base 레지스터의 Value가 상수인 경우 EA는 상수이므로 해당 EA에 대한 Memory Value Pool에 저장한다.
 					if (dynamic_cast<IR*>(BaseValue)->opr == IR::OPR::OPR_BVV)
 					{
+						printf("[GetMemory] 메모리 주소가 상수인 경우 해당 메모리 주소에 ValuePool 존재하는지 확인\n");
 						// 메모리 주소로부터 0부터 3바이트 주소에 대한 Memory Value Pool이 모두 존재해야 함
 						if (MemValue.find(dynamic_cast<ConstInt*>(dynamic_cast<IR*>(BaseValue)->Operands[0]->valuePtr)->intVar) != MemValue.end() &&
 							MemValue.find(dynamic_cast<ConstInt*>(dynamic_cast<IR*>(BaseValue)->Operands[0]->valuePtr)->intVar + 1) != MemValue.end() &&
@@ -1328,25 +1351,7 @@ int CreateIR(ZydisDecodedInstruction* ptr_di, ZydisDecodedOperand* operandPTr, D
 
 		Op2 = GetOperand(ptr_di, &operandPTr[1], irList);// x86 오퍼랜드를 Get하는 IR을 생성한다.
 
-		// 두 개의 오퍼랜드는 동일해야 한다.
-		if (Op1->Size != Op2->Size)
-		{
-			printf("GenerateOPR_ADD Error (Operand is not matched)\n");
-			return 0;
-		}
-		// Constant Folding 가능한 경우 CreateBinaryIR를 호출하지 않고 Imm Value 생성
-		if (isConstantFolding(Op1, Op2))
-		{		
-			rst = CraeteBVVIR( dynamic_cast<ConstInt*>(dynamic_cast<IR*>(Op1)->Operands[0]->valuePtr)->intVar + dynamic_cast<ConstInt*>(dynamic_cast<IR*>(Op2)->Operands[0]->valuePtr)->intVar, 32);
-			printf("ADD Operand can constant folding %x + %x = %x\n", dynamic_cast<ConstInt*>(dynamic_cast<IR*>(Op1)->Operands[0]->valuePtr)->intVar,
-				dynamic_cast<ConstInt*>(dynamic_cast<IR*>(Op2)->Operands[0]->valuePtr)->intVar,
-				dynamic_cast<ConstInt*>(dynamic_cast<IR*>(Op1)->Operands[0]->valuePtr)->intVar + dynamic_cast<ConstInt*>(dynamic_cast<IR*>(Op2)->Operands[0]->valuePtr)->intVar);
-		}
-		// Constant Folding 가능 조건이 아닌 경우 IR 생성
-		else
-		{
-			rst = CraeteBinaryIR(Op1, Op2, IR::OPR::OPR_ADD);
-		}
+		rst = CreateAddIR(Op1, Op2);
 		irList.push_back(rst);
 
 		// EFLAG 관련 IR 추가
@@ -2066,7 +2071,7 @@ int main()
 						 //{0x0f,0x47,0xcb,0x0f,0xb7,0xcd,0x0f,0xbf,0xce,0xd3,0xf1,0xd3,0xf9,0x8a,0xe8,0x81,0xed,0x04,0x00,0x00,0x00,0x8b,0x4c,0x25,0x00};
 	//{ 0x89, 0xD8,0x89, 0xd9, 0x01,0xc1,0x89,0xd0, 0x01,0xce, 0x00,0xed, 0x89,0xc1, 0x89,0xc6,0x01,0xc1 };
 	//{ 0xD2,0xC8,0x89,0xe8,0x89,0xcd,0x33,0xC3,0xF8,0x05,0x92,0x45,0x6F,0x67,0xF9,0xF7,0xD0,0x35,0x3D,0x21,0x33,0x61,0xF8,0x89,0xD8,0xF8,0x35,0xEF,0x46,0x71,0x55,0xF9,0x33,0xD8,0x81,0xFE,0x9F,0x1B,0xBA,0x6C,0x03,0xF8 };
-	{ 0x55, /*0x8B,0x0c,0x24,*/0xBB, 0x45, 0x23, 0x01, 0x00, 0x8B,0x0A, 0x01, 0xf0, 0x8B, 0x01, 0x8B, 0x00, 0x89, 0xC2,0x89,0x13 };
+	{ 0x55, /*0x8B,0x0c,0x24,*/0xBB, 0x45, 0x23, 0x01, 0x00, 0x8B,0x0A, 0x01, 0xf0, 0x8B, 0x00, 0x89, 0xC2,0x89,0x13 };
 	ZydisDecoderInit(&decoder, ZYDIS_MACHINE_MODE_LONG_COMPAT_32, ZYDIS_STACK_WIDTH_32);
 
 	initReg();

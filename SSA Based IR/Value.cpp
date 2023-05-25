@@ -40,6 +40,28 @@ IR* CraeteBVVIR(DWORD intVal, BYTE size)
 	return testAddIR;
 }
 
+
+
+IR* CraeteSubIR(Value* op1, IR::OPR _opr)
+{
+
+}
+
+IR* CraeteAndIR(Value* op1, IR::OPR _opr)
+{
+
+}
+
+IR* CraeteOrIR(Value* op1, IR::OPR _opr)
+{
+
+}
+
+IR* CraeteXorIR(Value* op1, IR::OPR _opr)
+{
+
+}
+
 IR* CraeteLoadIR(Value* op1, IR::OPR _opr)
 {
 	IR * testAddIR = new IR(IR::OPR_LOAD, op1);
@@ -52,6 +74,31 @@ IR* CraeteBinaryIR(Value* op1, Value* op2, IR::OPR _opr)
 	IR * testAddIR = new IR(_opr, op1, op2);
 	testAddIR->Size = op1->Size;
 	return testAddIR;
+}
+
+IR* CreateAddIR(Value* op1, Value* op2)
+{
+	IR* rst = nullptr;
+	if (op1->Size != op2->Size)
+	{
+		printf("CraeteAddIR Error (Operand is not matched)\n");
+		return 0;
+	}
+	// Constant Folding 가능한 경우 CreateBinaryIR를 호출하지 않고 Imm Value 생성
+	if (isConstantFolding(op1, op2))
+	{
+		rst = CraeteBVVIR(dynamic_cast<ConstInt*>(dynamic_cast<IR*>(op1)->Operands[0]->valuePtr)->intVar + dynamic_cast<ConstInt*>(dynamic_cast<IR*>(op2)->Operands[0]->valuePtr)->intVar, 32);
+		printf("ADD Operand can constant folding %x + %x = %x\n", dynamic_cast<ConstInt*>(dynamic_cast<IR*>(op1)->Operands[0]->valuePtr)->intVar,
+			dynamic_cast<ConstInt*>(dynamic_cast<IR*>(op2)->Operands[0]->valuePtr)->intVar,
+			dynamic_cast<ConstInt*>(dynamic_cast<IR*>(op1)->Operands[0]->valuePtr)->intVar + dynamic_cast<ConstInt*>(dynamic_cast<IR*>(op2)->Operands[0]->valuePtr)->intVar);
+	}
+	// Constant Folding 가능 조건이 아닌 경우 IR 생성
+	else
+	{
+		rst = CraeteBinaryIR(op1, op2, IR::OPR::OPR_ADD);
+	}
+
+	return rst;
 }
 
 IR* CraeteStoreIR(Value* op1, Value* op2, IR::OPR _opr)

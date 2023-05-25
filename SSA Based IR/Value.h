@@ -177,6 +177,8 @@ IR* CraeteLoadIR(Value* op1, IR::OPR _opr);
 
 IR* CraeteBinaryIR(Value* op1, Value* op2, IR::OPR _opr);
 
+IR* CreateAddIR(Value* op1, Value* op2);
+
 IR* CraeteStoreIR(Value* op1, Value* op2, IR::OPR _opr);
 
 IR* CraeteBVVIR(DWORD intVal, BYTE size);
