@@ -2,6 +2,7 @@
 #include <psapi.h>
 #include <stdio.h>
 #include <time.h>
+#include <iostream>
 #include <Zycore/LibC.h>
 #include <Zydis/Zydis.h>
 
@@ -12,6 +13,9 @@
 #include <algorithm>
 #include <functional>
 #include "Value.h"
+
+z3::context* z3Context;
+z3::expr* z3Equation;
 
 #define REG_EAX_16H (3*0)+0
 #define REG_EAX_8H (3*0)+1
@@ -45,6 +49,7 @@
 #define REG_EDI_8H (3*7)+1
 #define REG_EDI_8L (3*7)+2
 
+map<string, z3::expr*> symbolExprMap;
 vector<Value*> StatusFlagsValue[5];
 vector<Value*> RegValue[ZYDIS_REGISTER_MAX_VALUE];
 map<DWORD, vector<Value*>> MemValue;
@@ -108,14 +113,17 @@ void SaveRegisterValue(ZydisRegister _zydisReg, Value* _regValue, BYTE _size, ve
 				}
 			}
 			reg16hIR = new IR("EAX16H", RegValue[REG_EAX_16H].size(), IR::OPR::OPR_EXTRACT16H, _regValue);
+			reg16hIR->Size = 16;
 			RegValue[REG_EAX_16H].push_back(reg16hIR);
 			irList.push_back(reg16hIR);
 
 			reg8hIR = new IR("EAX8H", RegValue[REG_EAX_8H].size(), IR::OPR::OPR_EXTRACT8H, _regValue);
+			reg8hIR->Size = 8;
 			RegValue[REG_EAX_8H].push_back(reg8hIR);
 			irList.push_back(reg8hIR);
 
 			reg8lIR = new IR("EAX8L", RegValue[REG_EAX_8L].size(), IR::OPR::OPR_EXTRACT8L, _regValue);
+			reg8lIR->Size = 8;
 			RegValue[REG_EAX_8L].push_back(reg8lIR);
 			irList.push_back(reg8lIR);
 			break;
@@ -144,14 +152,17 @@ void SaveRegisterValue(ZydisRegister _zydisReg, Value* _regValue, BYTE _size, ve
 				}
 			}
 			reg16hIR = new IR("EBX16H", RegValue[REG_EBX_16H].size(), IR::OPR::OPR_EXTRACT16H, _regValue);
+			reg16hIR->Size = 16;
 			RegValue[REG_EBX_16H].push_back(reg16hIR);
 			irList.push_back(reg16hIR);
 
 			reg8hIR = new IR("EBX8H", RegValue[REG_EBX_8H].size(), IR::OPR::OPR_EXTRACT8H, _regValue);
+			reg8hIR->Size = 8;
 			RegValue[REG_EBX_8H].push_back(reg8hIR);
 			irList.push_back(reg8hIR);
 
 			reg8lIR = new IR("EBX8L", RegValue[REG_EBX_8L].size(), IR::OPR::OPR_EXTRACT8L, _regValue);
+			reg8lIR->Size = 8;
 			RegValue[REG_EBX_8L].push_back(reg8lIR);
 			irList.push_back(reg8lIR);
 			break;
@@ -180,14 +191,17 @@ void SaveRegisterValue(ZydisRegister _zydisReg, Value* _regValue, BYTE _size, ve
 				}
 			}
 			reg16hIR = new IR("ECX16H", RegValue[REG_ECX_16H].size(), IR::OPR::OPR_EXTRACT16H, _regValue);
+			reg16hIR->Size = 16;
 			RegValue[REG_ECX_16H].push_back(reg16hIR);
 			irList.push_back(reg16hIR);
 
 			reg8hIR = new IR("ECX8H", RegValue[REG_ECX_8H].size(), IR::OPR::OPR_EXTRACT8H, _regValue);
+			reg8hIR->Size = 8;
 			RegValue[REG_ECX_8H].push_back(reg8hIR);
 			irList.push_back(reg8hIR);
 
 			reg8lIR = new IR("ECX8L", RegValue[REG_ECX_8L].size(), IR::OPR::OPR_EXTRACT8L, _regValue);
+			reg8lIR->Size = 8;
 			RegValue[REG_ECX_8L].push_back(reg8lIR);
 			irList.push_back(reg8lIR);
 			break;
@@ -990,6 +1004,16 @@ Value* GetRegisterValue(ZydisRegister _zydisReg, vector<IR*>& irList)
 		break;
 
 		// 8비트
+	case ZYDIS_REGISTER_AH:
+		op2 = (RegValue[REG_EAX_8H].back());
+		return op2;
+		break;
+
+	case ZYDIS_REGISTER_AL:
+		op2 = (RegValue[REG_EAX_8L].back());
+		return op2;
+		break;
+
 	case ZYDIS_REGISTER_BH:
 		op2 = (RegValue[REG_EBX_8H].back());
 		return op2;
@@ -1024,6 +1048,7 @@ Value* GetRegisterValue(ZydisRegister _zydisReg, vector<IR*>& irList)
 }
 
 void SaveMemoryValue(ZydisDecodedInstruction* decodedInstPtr, ZydisDecodedOperand* _decodedOperandPtr, Value* _regValue, vector<IR*>& irList)
+
 {
 	IR* rstIR0 = nullptr;
 	IR* rstIR1 = nullptr;
@@ -1389,14 +1414,14 @@ Value* GetMemoryValue(ZydisDecodedInstruction* decodedInstPtr, ZydisDecodedOpera
 					// Base 레지스터의 Value가 상수인 경우 EA는 상수이므로 해당 EA에 대한 Memory Value Pool에 저장한다.
 					if (dynamic_cast<IR*>(BaseValue)->opr == IR::OPR::OPR_BVV)
 					{
-						printf("[GetMemory] 메모리 주소가 상수인 경우 해당 메모리 주소에 ValuePool 존재하는지 확인\n");
+						//printf("[GetMemory] 메모리 주소가 상수인 경우 해당 메모리 주소에 ValuePool 존재하는지 확인\n");
 						// 메모리 주소로부터 0부터 3바이트 주소에 대한 Memory Value Pool이 모두 존재해야 함
 						if (MemValue.find(dynamic_cast<ConstInt*>(dynamic_cast<IR*>(BaseValue)->Operands[0]->valuePtr)->intVar) != MemValue.end() &&
 							MemValue.find(dynamic_cast<ConstInt*>(dynamic_cast<IR*>(BaseValue)->Operands[0]->valuePtr)->intVar + 1) != MemValue.end() &&
 							MemValue.find(dynamic_cast<ConstInt*>(dynamic_cast<IR*>(BaseValue)->Operands[0]->valuePtr)->intVar + 2) != MemValue.end() &&
 							MemValue.find(dynamic_cast<ConstInt*>(dynamic_cast<IR*>(BaseValue)->Operands[0]->valuePtr)->intVar + 3) != MemValue.end())
 						{
-							printf("test\n");
+							//printf("test\n");
 							offset0Value = MemValue[(dynamic_cast<ConstInt*>(dynamic_cast<IR*>(BaseValue)->Operands[0]->valuePtr)->intVar)].back();
 							offset1Value = MemValue[(dynamic_cast<ConstInt*>(dynamic_cast<IR*>(BaseValue)->Operands[0]->valuePtr)->intVar + 1)].back();
 							offset2Value = MemValue[(dynamic_cast<ConstInt*>(dynamic_cast<IR*>(BaseValue)->Operands[0]->valuePtr)->intVar + 2)].back();
@@ -1550,41 +1575,12 @@ int CreateIR(ZydisDecodedInstruction* ptr_di, ZydisDecodedOperand* operandPTr, D
 		IRList.insert(make_pair(_offset, irList));
 		return 1;
 		break;
-		//case ZYDIS_MNEMONIC_SUB:
-		//	GenerateBinaryAndDestinationIsOpIR(BinaryOp::BinaryOps::Sub, Op1, Op2, _offset);
-		//	return 1;
-		//	break;
-
-		//case ZYDIS_MNEMONIC_AND:
-		//	GenerateBinaryAndDestinationIsOpIR(BinaryOp::BinaryOps::Xor, Op1, Op2, _offset);
-		//	return 1;
-		//	break;
-		//case ZYDIS_MNEMONIC_XOR:
-		//	GenerateBinaryAndDestinationIsOpIR(BinaryOp::BinaryOps::Xor, Op1, Op2, _offset);
-		//	return 1;
-		//	break;
-
-		//case ZYDIS_MNEMONIC_BTS:
-		//	GenerateBinaryAndDestinationIsOpIR(BinaryOp::BinaryOps::Bts, Op1, Op2, _offset);
-		//	return 1;
-		//	break;
 
 	case ZYDIS_MNEMONIC_SAR:
 		CraeteBinaryIR(Op1, Op2, IR::OPR::OPR_SAR);
 		return 1;
 		break;
-		//case ZYDIS_MNEMONIC_SHR:
-		//	GenerateBinaryAndDestinationIsOpIR(BinaryOp::BinaryOps::Shr, Op1, Op2, _offset);
-		//	return 1;
-		//	break;
-		//case ZYDIS_MNEMONIC_SHL:
-		//	GenerateBinaryAndDestinationIsOpIR(BinaryOp::BinaryOps::Shl, Op1, Op2, _offset);
-		//	return 1;
-		//	break;
-		//case ZYDIS_MNEMONIC_ROR:
-		//	GenerateBinaryAndDestinationIsOpIR(BinaryOp::BinaryOps::Ror, Op1, Op2, _offset);
-		//	return 1;
-		//	break;
+
 	case ZYDIS_MNEMONIC_ROL:
 		Op1 = GetOperand(ptr_di, &operandPTr[0], irList); // x86 오퍼랜드를 Get하는 IR을 생성한다.
 
@@ -1631,10 +1627,38 @@ int CreateIR(ZydisDecodedInstruction* ptr_di, ZydisDecodedOperand* operandPTr, D
 	case ZYDIS_MNEMONIC_SBB:
 		break;
 	case ZYDIS_MNEMONIC_AND:
+		Op1 = GetOperand(ptr_di, &operandPTr[0], irList); // x86 오퍼랜드를 Get하는 IR을 생성한다.
+
+		Op2 = GetOperand(ptr_di, &operandPTr[1], irList);// x86 오퍼랜드를 Get하는 IR을 생성한다.
+
+		// 두 개의 오퍼랜드는 동일해야 한다.
+		if (Op1->Size != Op2->Size)
+		{
+			printf("GenerateOPR_AND Error (Operand is not matched)\n");
+			return 0;
+		}
+		rst = CraeteBinaryIR(Op1, Op2, IR::OPR::OPR_AND);
+		irList.push_back(rst);
+
+		// EFLAG 관련 IR 추가
+
+		SaveRegisterValue(operandPTr[0].reg.value, rst, operandPTr[0].size, irList); // x86 오퍼랜드를 Set하는 IR을 생성한다.
+		IRList.insert(make_pair(_offset, irList));
 		break;
 	case ZYDIS_MNEMONIC_DAA:
 		break;
 	case ZYDIS_MNEMONIC_SUB:
+		Op1 = GetOperand(ptr_di, &operandPTr[0], irList); // x86 오퍼랜드를 Get하는 IR을 생성한다.
+
+		Op2 = GetOperand(ptr_di, &operandPTr[1], irList);// x86 오퍼랜드를 Get하는 IR을 생성한다.
+
+		rst = CreateSubIR(Op1, Op2);
+		irList.push_back(rst);
+
+		// EFLAG 관련 IR 추가
+
+		SaveRegisterValue(operandPTr[0].reg.value, rst, operandPTr[0].size, irList); // x86 오퍼랜드를 Set하는 IR을 생성한다.
+		IRList.insert(make_pair(_offset, irList));
 		break;
 	case ZYDIS_MNEMONIC_DAS:
 		break;
@@ -2138,6 +2162,9 @@ void printIR(IR* _irPtr)
 	case IR::OPR::OPR_SUB:
 		printf("%s = OPR_SUB %s %s\n", _irPtr->Name.c_str(), _irPtr->Operands[0]->valuePtr->Name.c_str(), _irPtr->Operands[1]->valuePtr->Name.c_str());
 		break;
+	case IR::OPR::OPR_AND:
+		printf("%s = OPR_AND %s %s\n", _irPtr->Name.c_str(), _irPtr->Operands[0]->valuePtr->Name.c_str(), _irPtr->Operands[1]->valuePtr->Name.c_str());
+		break;
 	case IR::OPR::OPR_XOR:
 		printf("%s = OPR_XOR %s %s\n", _irPtr->Name.c_str(), _irPtr->Operands[0]->valuePtr->Name.c_str(), _irPtr->Operands[1]->valuePtr->Name.c_str());
 		break;
@@ -2156,56 +2183,267 @@ void printIR(IR* _irPtr)
 	}
 }
 
-void initReg()
+void CheckTaintIR(IR* _irPtr)
 {
-	Value* eax_16h = CraeteBVVIR(0xaaaa, 16);
-	RegValue[REG_EAX_16H].push_back(eax_16h);
+	_irPtr->isTainted = false;
 
-	Value* eax_lh = CraeteBVVIR(0xa2, 8);
-	RegValue[REG_EAX_8H].push_back(eax_lh);
+	if (dynamic_cast<ConstInt*>(_irPtr))
+	{
+		if (dynamic_cast<ConstInt*>(_irPtr)->opr == IR::OPR::OPR_BVV)
+		{
 
-	Value* eax_ll = CraeteBVVIR(0xa1, 8);
-	RegValue[REG_EAX_8L].push_back(eax_ll);
+			printf("%x\n", dynamic_cast<ConstInt*>(_irPtr)->intVar);
+		}
+	}
+	switch (_irPtr->opr)
+	{
+	case IR::OPR::OPR_CONCAT:
+		for (int i = 0; i < _irPtr->Operands.size(); i++)
+		{
+			if (_irPtr->Operands[0]->valuePtr->isTainted)
+			{
+				_irPtr->isTainted = true;
+				//return;
+			}
+		}
+		break;
+	case IR::OPR::OPR_BVV:
+		//printf("%s =  BVV(%x, %d)\n", _irPtr->Name.c_str(), dynamic_cast<ConstInt*>(_irPtr->Operands[0]->valuePtr)->intVar, dynamic_cast<ConstInt*>(_irPtr->Operands[1]->valuePtr)->intVar);
+		break;
+	case IR::OPR::OPR_EXTRACT16H:
+	case IR::OPR::OPR_EXTRACT8HH:
+	case IR::OPR::OPR_EXTRACT8HL:
+	case IR::OPR::OPR_EXTRACT8H:
+	case IR::OPR::OPR_EXTRACT8L:
+		for (int i = 0; i < _irPtr->Operands.size(); i++)
+		{
+			if (_irPtr->Operands[0]->valuePtr->isTainted)
+			{
+				_irPtr->isTainted = true;
+				//return;
+			}
+		}
+		break;
+	case IR::OPR::OPR_ADD:
+	case IR::OPR::OPR_SUB:
+	case IR::OPR::OPR_XOR:
+	case IR::OPR::OPR_ROL:
+	case IR::OPR::OPR_SAR:
+		for (int i = 0; i < _irPtr->Operands.size(); i++)
+		{
+			if (_irPtr->Operands[0]->valuePtr->isTainted)
+			{
+				_irPtr->isTainted = true;
+				//return;
+			}
+		}
+		break;
+	case IR::OPR::OPR_LOAD:
+		//printf("%s = LOAD %s\n", _irPtr->Name.c_str(), _irPtr->Operands[0]->valuePtr->Name.c_str());
+		break;
+	case IR::OPR::OPR_STORE:
+		//printf("STORE %s %s\n", _irPtr->Operands[0]->valuePtr->Name.c_str(), _irPtr->Operands[1]->valuePtr->Name.c_str());
+		break;
+	}
 
-	Value* ebx_16h = CraeteBVVIR(0xbbbb, 16);
-	RegValue[REG_EBX_16H].push_back(ebx_16h);
+	if (_irPtr->isTainted)
+	{
+		printf("Taint IR %s\n", _irPtr->Name.c_str());
+	}
+}
 
-	Value* ebx_lh = CraeteBVVIR(0xb1, 8);
-	RegValue[REG_EBX_8H].push_back(ebx_lh);
+void initReg()
+{	
+	/*
+		1. EAX Sym Value 생성
+		2. z3Context->bv_const("EAX_SYM", 32)
+		3. 16H, 8H, 8L 에 Extract 하여 저장
+	*/
 
-	Value* ebx_ll = CraeteBVVIR(0xb2, 8);
-	RegValue[REG_EBX_8L].push_back(ebx_ll);
+	Value* eaxValue = new Value("EAX",0);
+	eaxValue->ast = std::make_shared<BTreeNode>(MakeBTreeNode(eaxValue->Name));
+	eaxValue->ast->m_NodeType = NT_SYMVAR;
+	eaxValue->Size = 32;
+	z3::expr* z3eax = new z3::expr(z3Context->bv_const("EAX(0)", 32));
+	z3Equation = new z3::expr(*z3eax);
+	symbolExprMap["EAX(0)"] = z3eax;
 
-	Value* ECX_16h = new Value("ECX.16H", RegValue[REG_ECX_16H].size());
-	RegValue[REG_ECX_16H].push_back(ECX_16h);
+	IR * reg16hIR = new IR("EAX16H", RegValue[REG_EAX_16H].size(), IR::OPR::OPR_EXTRACT16H, eaxValue);
+	reg16hIR->Size = 16;
+	RegValue[REG_EAX_16H].push_back(reg16hIR);
 
-	Value* ECX_lh = new Value("ECX.8H", RegValue[REG_ECX_8H].size());
-	ECX_lh->Size = 8;
-	RegValue[REG_ECX_8H].push_back(ECX_lh);
+	IR* regEax8hIR = new IR("EAX8H", RegValue[REG_EAX_8H].size(), IR::OPR::OPR_EXTRACT8H, eaxValue);
+	regEax8hIR->Size = 8;
+	RegValue[REG_EAX_8H].push_back(regEax8hIR);
 
-	Value* ECX_ll = new Value("ECX.8L", RegValue[REG_ECX_8L].size());
-	ECX_ll->Size = 8;
-	RegValue[REG_ECX_8L].push_back(ECX_ll);
+	IR* regEax8lIR = new IR("EAX8L", RegValue[REG_EAX_8L].size(), IR::OPR::OPR_EXTRACT8L, eaxValue);
+	regEax8lIR->Size = 8;
+	RegValue[REG_EAX_8L].push_back(regEax8lIR);
 
-	Value* EDX_16h = new Value("EDX.16H", RegValue[REG_EDX_16H].size());
-	EDX_16h->Size = 16;
-	RegValue[REG_EDX_16H].push_back(EDX_16h);
+	//Value* eax_16h = new Value("EAX.16H", RegValue[REG_EAX_16H].size());//CraeteBVVIR(0xaaaa, 16);
+	//eax_16h->ast = std::make_shared<BTreeNode>(MakeBTreeNode(eax_16h->Name));
+	//eax_16h->ast->m_NodeType = NT_SYMVAR;
+	//eax_16h->Size = 16;
+	//RegValue[REG_EAX_16H].push_back(eax_16h);
+	//z3::expr*  z3eax_16hVar = new z3::expr(z3Context->bv_const("EAX.16H", 16));
+	//z3Equation = new z3::expr(*z3eax_16hVar);
+	//symbolExprMap["EAX.16H"] = z3eax_16hVar;
+	//eax_16h->isTainted = true;
 
-	Value* EDX_lh = new Value("EDX.8H", RegValue[REG_EDX_8H].size());
-	EDX_lh->Size = 8;
-	RegValue[REG_EDX_8H].push_back(EDX_lh);
+	//Value* eax_lh = new Value("EAX.8H", RegValue[REG_EAX_8H].size()); // CraeteBVVIR(0xa2, 8);
+	//eax_lh->ast = std::make_shared<BTreeNode>(MakeBTreeNode(eax_lh->Name));
+	//eax_lh->ast->m_NodeType = NT_SYMVAR;
+	//eax_lh->Size = 8;
+	//RegValue[REG_EAX_8H].push_back(eax_lh);
+	//z3::expr* z3eax_8hVar = new z3::expr(z3Context->bv_const("EAX.8H", 8));
+	//symbolExprMap["EAX.8H"] = z3eax_8hVar;
+	//eax_lh->isTainted = true;
 
-	Value* EDX_ll = new Value("EDX.8L", RegValue[REG_EDX_8L].size());
-	EDX_ll->Size = 8;
-	RegValue[REG_EDX_8L].push_back(EDX_ll);
+	//Value* eax_ll = new Value("EAX.8L", RegValue[REG_EAX_8L].size()); //CraeteBVVIR(0xa1, 8);
+	//eax_ll->Size = 8;
+	//eax_ll->ast = std::make_shared<BTreeNode>(MakeBTreeNode(eax_ll->Name));
+	//eax_ll->ast->m_NodeType = NT_SYMVAR;
+	//RegValue[REG_EAX_8L].push_back(eax_ll);
+	//z3::expr* z3eax_8lVar = new z3::expr(z3Context->bv_const("EAX.8L", 8));
+	//symbolExprMap["EAX.8L"] = z3eax_8lVar;
+	//eax_ll->isTainted = true;
 
-	Value* ESI_16h = CraeteBVVIR(0xeeee, 16);
+	Value* ebxValue = new Value("EBX", 0);
+	ebxValue->ast = std::make_shared<BTreeNode>(MakeBTreeNode(ebxValue->Name));
+	ebxValue->ast->m_NodeType = NT_SYMVAR;
+	ebxValue->Size = 32;
+	z3::expr* z3ebx = new z3::expr(z3Context->bv_const("EBX(0)", 32));
+	//z3Equation = new z3::expr(*z3ecx);
+	symbolExprMap["EBX(0)"] = z3ebx;
+
+
+	IR* regEbx16hIR = new IR("EBX16H", RegValue[REG_EBX_16H].size(), IR::OPR::OPR_EXTRACT16H, ebxValue);
+	regEbx16hIR->Size = 16;
+	RegValue[REG_EBX_16H].push_back(regEbx16hIR);
+
+	IR* regEbx8hIR = new IR("EBX8H", RegValue[REG_EBX_8H].size(), IR::OPR::OPR_EXTRACT8H, ebxValue);
+	regEbx8hIR->Size = 8;
+	RegValue[REG_EBX_8H].push_back(regEbx8hIR);
+
+	IR* regEbx8lIR = new IR("EBX8L", RegValue[REG_EBX_8L].size(), IR::OPR::OPR_EXTRACT8L, ebxValue);
+	regEbx8lIR->Size = 8;
+	RegValue[REG_EBX_8L].push_back(regEbx8lIR);
+
+	//Value* ebx_16h = new Value("EBX.16H", RegValue[REG_EBX_16H].size()); // CraeteBVVIR(0xbbbb, 16);
+	//ebx_16h->Size = 16;
+	//ebx_16h->ast = std::make_shared<BTreeNode>(MakeBTreeNode(ebx_16h->Name));
+	//ebx_16h->ast->m_NodeType = NT_SYMVAR;
+	//z3::expr* z3ebx_16hVar = new z3::expr(z3Context->bv_const("EBX.16H", 16));
+	//symbolExprMap["EBX.16H"] = z3ebx_16hVar;
+	//RegValue[REG_EBX_16H].push_back(ebx_16h);
+
+	//Value* ebx_lh = new Value("EBX.8H", RegValue[REG_EBX_8H].size()); //CraeteBVVIR(0xb1, 8);
+	//ebx_lh->Size = 8;
+	//ebx_lh->ast = std::make_shared<BTreeNode>(MakeBTreeNode(ebx_lh->Name));
+	//ebx_lh->ast->m_NodeType = NT_SYMVAR;
+	//z3::expr* z3ebx_8hVar = new z3::expr(z3Context->bv_const("EBX.8H", 8));
+	//symbolExprMap["EBX.8H"] = z3ebx_8hVar;
+	//RegValue[REG_EBX_8H].push_back(ebx_lh);
+
+	//Value* ebx_ll = new Value("EBX.8L", RegValue[REG_EBX_8L].size()); //CraeteBVVIR(0xb2, 8);
+	//ebx_ll->Size = 8;
+	//ebx_ll->ast = std::make_shared<BTreeNode>(MakeBTreeNode(ebx_ll->Name));
+	//ebx_ll->ast->m_NodeType = NT_SYMVAR;
+	//z3::expr* z3ebx_8lVar = new z3::expr(z3Context->bv_const("EBX.8L", 8));
+	//symbolExprMap["EBX.8L"] = z3ebx_8lVar;
+	//RegValue[REG_EBX_8L].push_back(ebx_ll);
+
+	Value* ecxValue = new Value("ECX", 0);
+	ecxValue->ast = std::make_shared<BTreeNode>(MakeBTreeNode(ecxValue->Name));
+	ecxValue->ast->m_NodeType = NT_SYMVAR;
+	ecxValue->Size = 32;
+	z3::expr* z3ecx = new z3::expr(z3Context->bv_const("ECX(0)", 32));
+	//z3Equation = new z3::expr(*z3ecx);
+	symbolExprMap["ECX(0)"] = z3ecx;
+
+
+	IR* regEcx16hIR = new IR("ECX16H", RegValue[REG_ECX_16H].size(), IR::OPR::OPR_EXTRACT16H, ecxValue);
+	regEcx16hIR->Size = 16;
+	RegValue[REG_ECX_16H].push_back(regEcx16hIR);
+
+	IR* regEcx8hIR = new IR("ECX8H", RegValue[REG_ECX_8H].size(), IR::OPR::OPR_EXTRACT8H, ecxValue);
+	regEcx8hIR->Size = 8;
+	RegValue[REG_ECX_8H].push_back(regEcx8hIR);
+
+	IR* regEcx8lIR = new IR("ECX8L", RegValue[REG_ECX_8L].size(), IR::OPR::OPR_EXTRACT8L, ecxValue);
+	regEcx8lIR->Size = 8;
+	RegValue[REG_ECX_8L].push_back(regEcx8lIR);
+
+	//Value* ECX_16h = new Value("ECX.16H", RegValue[REG_ECX_16H].size());
+	//ECX_16h->Size = 16;
+	//ECX_16h->ast = std::make_shared<BTreeNode>(MakeBTreeNode(ECX_16h->Name));
+	//ECX_16h->ast->m_NodeType = NT_SYMVAR;
+	//z3::expr* z3ecx_16hVar = new z3::expr(z3Context->bv_const("ECX.16H", 16));
+	//symbolExprMap["ECX.16H(0)"] = z3ecx_16hVar;
+	//RegValue[REG_ECX_16H].push_back(ECX_16h);
+
+	//Value* ECX_lh = new Value("ECX.8H", RegValue[REG_ECX_8H].size());
+	//ECX_lh->Size = 8;
+	//ECX_lh->ast = std::make_shared<BTreeNode>(MakeBTreeNode(ECX_lh->Name));
+	//ECX_lh->ast->m_NodeType = NT_SYMVAR;
+	//z3::expr* z3ecx_8hVar = new z3::expr(z3Context->bv_const("ECX.8H", 8));
+	//symbolExprMap["ECX.8H(0)"] = z3ecx_8hVar;
+	//RegValue[REG_ECX_8H].push_back(ECX_lh);
+
+	//Value* ECX_ll = new Value("ECX.8L", RegValue[REG_ECX_8L].size());
+	//ECX_ll->Size = 8;
+	//ECX_ll->ast = std::make_shared<BTreeNode>(MakeBTreeNode(ECX_ll->Name));
+	//ECX_ll->ast->m_NodeType = NT_SYMVAR;
+	//z3::expr* z3ecx_8lVar = new z3::expr(z3Context->bv_const("ECX.8L", 8));
+	//symbolExprMap["ECX.8L(0)"] = z3ecx_8lVar;
+	//RegValue[REG_ECX_8L].push_back(ECX_ll);
+
+	Value* edxValue = new Value("EDX", 0);
+	edxValue->ast = std::make_shared<BTreeNode>(MakeBTreeNode(edxValue->Name));
+	edxValue->ast->m_NodeType = NT_SYMVAR;
+	edxValue->Size = 32;
+	z3::expr* z3edx = new z3::expr(z3Context->bv_const("EDX(0)", 32));
+	//z3Equation = new z3::expr(*z3ecx);
+	symbolExprMap["EDX(0)"] = z3edx;
+
+
+	IR* regEdx16hIR = new IR("EDX16H", RegValue[REG_EDX_16H].size(), IR::OPR::OPR_EXTRACT16H, ecxValue);
+	regEdx16hIR->Size = 16;
+	RegValue[REG_EDX_16H].push_back(regEdx16hIR);
+
+	IR* regEdx8hIR = new IR("EDX8H", RegValue[REG_EDX_8H].size(), IR::OPR::OPR_EXTRACT8H, ecxValue);
+	regEdx8hIR->Size = 8;
+	RegValue[REG_EDX_8H].push_back(regEdx8hIR);
+
+	IR* regEdx8lIR = new IR("EDX8L", RegValue[REG_EDX_8L].size(), IR::OPR::OPR_EXTRACT8L, ecxValue);
+	regEdx8lIR->Size = 8;
+	RegValue[REG_EDX_8L].push_back(regEdx8lIR);
+
+	//Value* EDX_16h = new Value("EDX.16H", RegValue[REG_EDX_16H].size());
+	//EDX_16h->ast = std::make_shared<BTreeNode>(MakeBTreeNode("EDX_16h"));
+	//EDX_16h->Size = 16;
+	//RegValue[REG_EDX_16H].push_back(EDX_16h);
+
+	//Value* EDX_lh = new Value("EDX.8H", RegValue[REG_EDX_8H].size());
+	//EDX_lh->ast = std::make_shared<BTreeNode>(MakeBTreeNode("EDX_lh"));
+	//EDX_lh->Size = 8;
+	//RegValue[REG_EDX_8H].push_back(EDX_lh);
+
+	//Value* EDX_ll = new Value("EDX.8L", RegValue[REG_EDX_8L].size());
+	//EDX_ll->ast = std::make_shared<BTreeNode>(MakeBTreeNode("EDX_ll"));
+	//EDX_ll->Size = 8;
+	//RegValue[REG_EDX_8L].push_back(EDX_ll);
+
+	Value* ESI_16h = new Value("ESI.16H", RegValue[REG_ESI_16H].size());//CraeteBVVIR(0xeeee, 16);
+	ESI_16h->ast = std::make_shared<BTreeNode>(MakeBTreeNode(ESI_16h->Name));
 	RegValue[REG_ESI_16H].push_back(ESI_16h);
 
-	Value* ESI_lh = CraeteBVVIR(0xe2, 8);
+	Value* ESI_lh = new Value("EDX.8H", RegValue[REG_ESI_8H].size());//CraeteBVVIR(0xe2, 8);
+	ESI_lh->ast = std::make_shared<BTreeNode>(MakeBTreeNode(ESI_lh->Name));
 	RegValue[REG_ESI_8H].push_back(ESI_lh);
 
-	Value* ESI_ll = CraeteBVVIR(0xe1, 8);
+	Value* ESI_ll = new Value("ESI.8L", RegValue[REG_ESI_8L].size());//CraeteBVVIR(0xe1, 8);
+	ESI_ll->ast = std::make_shared<BTreeNode>(MakeBTreeNode(ESI_ll->Name));
 	RegValue[REG_ESI_8L].push_back(ESI_ll);
 
 	Value* EDI_16h = CraeteBVVIR(0xffff, 16);
@@ -2244,6 +2482,7 @@ void initReg()
 
 int main()
 {
+	z3Context = new z3::context;
 	DWORD offset = 0;
 	ZydisDecodedInstruction g_inst;
 	ZydisDecoder decoder;
@@ -2254,7 +2493,8 @@ int main()
 						 //{0x0f,0x47,0xcb,0x0f,0xb7,0xcd,0x0f,0xbf,0xce,0xd3,0xf1,0xd3,0xf9,0x8a,0xe8,0x81,0xed,0x04,0x00,0x00,0x00,0x8b,0x4c,0x25,0x00};
 	//{ 0x89, 0xD8,0x89, 0xd9, 0x01,0xc1,0x89,0xd0, 0x01,0xce, 0x00,0xed, 0x89,0xc1, 0x89,0xc6,0x01,0xc1 };
 	//{ 0xD2,0xC8,0x89,0xe8,0x89,0xcd,0x33,0xC3,0xF8,0x05,0x92,0x45,0x6F,0x67,0xF9,0xF7,0xD0,0x35,0x3D,0x21,0x33,0x61,0xF8,0x89,0xD8,0xF8,0x35,0xEF,0x46,0x71,0x55,0xF9,0x33,0xD8,0x81,0xFE,0x9F,0x1B,0xBA,0x6C,0x03,0xF8 };
-	{ 0x55, /*0x8B,0x0c,0x24,*/0xBB, 0x45, 0x23, 0x01, 0x00, 0x8B,0x0A, 0x01, 0xf0, 0x8B, 0x00, 0x89, 0xC2,0x89,0x13 };
+	//{ 0x2B,0xC8,0x33,0xCA,0x03,0xC3,0x23,0xC2,0x03,0xC1 };
+	{ 0xba, 0x84,0xaf,0x37,0x11,0x23,0xc8,0x2B,0xC8,0x33,0xCA,0x03,0xC3,0x22,0xC6,0x02,0xE6 };
 	ZydisDecoderInit(&decoder, ZYDIS_MACHINE_MODE_LONG_COMPAT_32, ZYDIS_STACK_WIDTH_32);
 
 	initReg();
@@ -2304,6 +2544,20 @@ int main()
 		printf("--------------------------------\n");
 	}
 	printf("Total IR %d\n", cnt);
+
+	for (auto it1 : IRList)
+	{
+		printf("--------------------------------\n");
+		for (auto it : it1.second)
+		{
+			printf("[%p]", it1.first);
+			CheckTaintIR(it);
+			printf("\n");
+			cnt++;
+		}
+		printf("--------------------------------\n");
+	}
+
 #pragma region Dead Store Elimination
 	for (int i = 0; i < cnt; i++)
 	{
@@ -2623,6 +2877,227 @@ int main()
 	}
 #pragma endregion
 
+	for (auto it1 : IRList)
+	{
+		printf("--------------------------------\n");
+		for (auto it : it1.second)
+		{
+			printf("[%p]", it1.first);
+			PostorderTraverse(it->ast);
+			//PreorderTraverse(it->ast);
+			printf("\n");
+		}
+		printf("--------------------------------\n");
+	}
+
+	for (auto it1 : IRList)
+	{
+		printf("--------------------------------\n");
+		for (auto it : it1.second)
+		{
+			printf("[%p]", it1.first);
+			//InorderTraverse(it->ast);
+			printf("%s", EvaluateExpTree(it->ast).c_str());
+			z3::expr z3Expression =  GetZ3ExprFromTree(it->ast);
+			printf("\n");
+			// 생성된 Z3 AST 출력
+			std::cout << "생성된 Z3 AST: " << z3Expression.simplify() << std::endl;
+			printf("\n");
+			if (it1.first == 0x40100F)
+			{
+				z3::solver solver(*z3Context);
+				z3Expression = z3Expression == 0x41;
+				solver.add(z3Expression);
+				z3::check_result result = solver.check();
+
+				if (result == z3::sat) {
+					// The constraints are satisfiable
+					std::cout << "Satisfiable" << std::endl;
+
+					// Get the model
+					z3::model model = solver.get_model();
+
+					// Print the model
+					std::cout << "Model:" << std::endl;
+					std::cout << model << std::endl;
+				}
+				else if (result == z3::unsat) {
+					// The constraints are unsatisfiable
+					std::cout << "Unsatisfiable" << std::endl;
+				}
+			}
+		}
+		printf("--------------------------------\n");
+	}
+
+	delete z3Context;
 	printf("Finish\n");
 	system("pause");
+}
+
+z3::expr GetZ3ExprFromTree(std::shared_ptr<BTreeNode> bt)
+{
+	if (bt->left == NULL)
+	{
+		if (bt->m_NodeType == NT_SYMVAR)
+		{
+			if (symbolExprMap.find(bt->nodeName) != symbolExprMap.end())
+			{
+				return *symbolExprMap[bt->nodeName];
+			}
+		}
+		else
+		{
+			if (dynamic_cast<ConstInt*>(bt->valPtr))
+			{
+				if (dynamic_cast<ConstInt*>(bt->valPtr)->Size == 32)
+				{
+					z3::expr z3Expression = z3Context->bv_val((unsigned int)dynamic_cast<ConstInt*>(bt->valPtr)->intVar, 32);
+					std::cout << "test Z3 AST(32): " << z3Expression << std::endl;
+					return z3Context->bv_val((unsigned int)dynamic_cast<ConstInt*>(bt->valPtr)->intVar, 32);
+				}
+
+				else if (dynamic_cast<ConstInt*>(bt->valPtr)->Size == 16)
+				{
+					z3::expr z3Expression = z3Context->bv_val((unsigned int)dynamic_cast<ConstInt*>(bt->valPtr)->intVar, 16);
+					std::cout << "test Z3 AST(16): " << z3Expression << std::endl;
+					return z3Context->bv_val((unsigned int)dynamic_cast<ConstInt*>(bt->valPtr)->intVar, 16);
+				}
+
+				else if (dynamic_cast<ConstInt*>(bt->valPtr)->Size == 8)
+				{
+					z3::expr z3Expression = z3Context->bv_val((unsigned int)dynamic_cast<ConstInt*>(bt->valPtr)->intVar, 8);
+					std::cout << "test Z3 AST(8): " << z3Expression << std::endl;
+					return z3Context->bv_val((unsigned int)dynamic_cast<ConstInt*>(bt->valPtr)->intVar, 8);
+				}
+
+				else
+				{
+					std::cout << "test Z3 AST(else)" << endl;
+				}
+			}
+		}
+	}
+
+	else
+	{
+		z3::expr op1 = GetZ3ExprFromTree(bt->left);
+		if (bt->right != NULL)
+		{
+			z3::expr op2 = GetZ3ExprFromTree(bt->right);
+		}
+
+		if (bt->nodeName.compare("OPR_BVV") == 0)
+		{
+			return op1;
+
+		}
+
+		else if (bt->nodeName.compare("OPR_ADD") == 0) {
+
+			z3::expr op2 = GetZ3ExprFromTree(bt->right);
+			return op1 + op2;
+		}
+
+		else if (bt->nodeName.compare("OPR_SUB") == 0) {
+
+			z3::expr op2 = GetZ3ExprFromTree(bt->right);
+			return op1 - op2;
+		}
+
+		else if (bt->nodeName.compare("OPR_AND") == 0) {
+
+			z3::expr op2 = GetZ3ExprFromTree(bt->right);
+			std::cout << "test Z3 OPR_AND AST: " << op1 << "Op2 : " << op2 << std::endl;
+			return op1 & op2;
+		}
+
+		else if (bt->nodeName.compare("OPR_XOR") == 0) {
+
+			z3::expr op2 = GetZ3ExprFromTree(bt->right);
+			return op1 ^ op2;
+		}
+
+		else if (bt->nodeName.compare("Concat") == 0)
+		{
+			if (bt->third != NULL)
+			{
+				z3::expr op3 = GetZ3ExprFromTree(bt->third);
+			}
+			if (bt->fourth != NULL)
+				z3::expr op4 = GetZ3ExprFromTree(bt->fourth);
+			if (bt->fourth != nullptr)
+			{
+				z3::expr_vector exprVec(*z3Context);
+				z3::expr op2 = GetZ3ExprFromTree(bt->right);
+				z3::expr op3 = GetZ3ExprFromTree(bt->third);
+				z3::expr op4 = GetZ3ExprFromTree(bt->fourth);
+
+				exprVec.push_back(op1);
+				exprVec.push_back(op2);
+				exprVec.push_back(op3);
+				exprVec.push_back(op4);
+
+
+				return z3::concat(exprVec);
+			}
+
+			else if (bt->third != nullptr && bt->fourth == nullptr)
+			{
+				z3::expr_vector exprVec(*z3Context);
+				z3::expr op2 = GetZ3ExprFromTree(bt->right);
+				z3::expr op3 = GetZ3ExprFromTree(bt->third);
+
+				exprVec.push_back(op1);
+				exprVec.push_back(op2);
+				exprVec.push_back(op3);
+
+
+				return z3::concat(exprVec);
+			}
+
+			else
+			{
+				printf("Concat 2 Operands\n");
+				z3::expr op2 = GetZ3ExprFromTree(bt->right);
+				return z3::concat(op1, op2);
+			}
+		}
+
+		else if (bt->nodeName.compare("EXTRACT16H") == 0)
+		{
+			return op1.extract(31, 16);
+		}
+
+		else if (bt->nodeName.compare("EXTRACT8H") == 0)
+		{
+			return op1.extract(15, 8);
+		}
+
+		else if (bt->nodeName.compare("EXTRACT8L") == 0)
+		{
+			return op1.extract(7, 0);
+		}
+
+		else
+		{
+			if (bt->nodeName.empty() == false)
+			{
+				//if (bt->m_NodeType == NT_SYMVAR)
+				//{
+				//	if (symbolExprMap.find(bt->nodeName) != symbolExprMap.end())
+				//	{
+				//		symbolExprMap[bt->m_NodeType]
+				//	}
+				//}
+
+				//else
+				//{
+				//	
+				//}
+				//printf("[test] %s\n", bt->nodeName.c_str());
+
+			}
+		}
+	}
 }

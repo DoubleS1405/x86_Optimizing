@@ -5,8 +5,12 @@
 #include <Zydis/Zydis.h>
 #include <list>
 #include <set>
+#include <map>
 #include <vector>
 #include <string>
+#include "AST.h"
+#include "z3++.h"
+
 
 using namespace std;
 
@@ -28,6 +32,9 @@ public:
 	set<OPERAND*> UseList; // 현재 Value를 Use 하는 오퍼랜드
 	std::string Name;
 	bool isHiddenRHS=false;
+	bool isTainted = false;
+
+	shared_ptr<BTreeNode> ast;
 
 	Value();
 
@@ -53,6 +60,7 @@ class IR : public Value
 public:
 	enum OPR
 	{
+		OPR_NONE,
 		OPR_CONCAT,
 		OPR_EXTRACT,
 		OPR_EXTRACT16H,
@@ -68,6 +76,7 @@ public:
 		OPR_LOAD,
 		OPR_ADD,
 		OPR_SUB,
+		OPR_AND,
 		OPR_OR,
 		OPR_XOR,
 		OPR_BT,
@@ -97,12 +106,24 @@ public:
 	{
 		opr = _opr;
 		AddOperand(op1);
+
+		ast = std::make_shared<BTreeNode>(MakeBTreeNode(printOpr(_opr)));
+		ast->m_NodeType = NT_OPERATOR;
+
+		std::shared_ptr<BTreeNode> ptr1 = std::make_shared<BTreeNode>(MakeBTreeNode(op1->Name));
+		MakeLeftSubTree(ast, op1->ast);
 	}
 
 	IR(string ValName, DWORD index, OPR _opr, Value* op1):Value(ValName, index)
 	{
 		opr = _opr;
 		AddOperand(op1);
+
+		ast = std::make_shared<BTreeNode>(MakeBTreeNode(printOpr(_opr)));
+		ast->m_NodeType = NT_OPERATOR;
+
+		std::shared_ptr<BTreeNode> ptr1 = std::make_shared<BTreeNode>(MakeBTreeNode(op1->Name));
+		MakeLeftSubTree(ast, op1->ast);
 	}
 
 	IR(OPR _opr, Value* op1, Value* op2)
@@ -110,6 +131,15 @@ public:
 		opr = _opr;
 		AddOperand(op1);
 		AddOperand(op2);
+
+		ast = std::make_shared<BTreeNode>(MakeBTreeNode(printOpr(_opr)));
+		ast->m_NodeType = NT_OPERATOR;
+
+		std::shared_ptr<BTreeNode> ptr1 = std::make_shared<BTreeNode>(MakeBTreeNode(op1->Name));
+		MakeLeftSubTree(ast, op1->ast);
+
+		std::shared_ptr<BTreeNode>  ptr2 = std::make_shared<BTreeNode>(MakeBTreeNode(op2->Name));
+		MakeRightSubTree(ast, op2->ast);
 	}
 
 	IR(OPR _opr, Value* op1, Value* op2, BYTE size)
@@ -118,14 +148,32 @@ public:
 		Size = size;
 		AddOperand(op1);
 		AddOperand(op2);
+
+		ast = std::make_shared<BTreeNode>(MakeBTreeNode(printOpr(_opr)));
+		ast->m_NodeType = NT_OPERATOR;
+
+		std::shared_ptr<BTreeNode> ptr1 = std::make_shared<BTreeNode>(MakeBTreeNode(op1->Name));
+		MakeLeftSubTree(ast, op1->ast);
+
+		std::shared_ptr<BTreeNode>  ptr2 = std::make_shared<BTreeNode>(MakeBTreeNode(op2->Name));
+		MakeRightSubTree(ast, op2->ast);
 	}
 
 	IR(string ValName, DWORD index, OPR _opr, Value* op1, Value* op2)
 	{
 		opr = _opr;
 		AddOperand(op1);
-		AddOperand(op1);
 		AddOperand(op2);
+
+		ast = std::make_shared<BTreeNode>(MakeBTreeNode(printOpr(_opr)));
+		ast->m_NodeType = NT_OPERATOR;
+
+		std::shared_ptr<BTreeNode> ptr1 = std::make_shared<BTreeNode>(MakeBTreeNode(op1->Name));
+		MakeLeftSubTree(ast, op1->ast);
+
+		std::shared_ptr<BTreeNode>  ptr2 = std::make_shared<BTreeNode>(MakeBTreeNode(op2->Name));
+		MakeRightSubTree(ast, op2->ast);
+
 		Value(ValName, index);
 	}
 
@@ -135,6 +183,18 @@ public:
 		AddOperand(op1);
 		AddOperand(op2);
 		AddOperand(op3);
+
+		ast = std::make_shared<BTreeNode>(MakeBTreeNode(printOpr(_opr)));
+		ast->m_NodeType = NT_OPERATOR;
+
+		std::shared_ptr<BTreeNode> ptr1 = std::make_shared<BTreeNode>(MakeBTreeNode(op1->Name));
+		MakeLeftSubTree(ast, op1->ast);
+
+		std::shared_ptr<BTreeNode>  ptr2 = std::make_shared<BTreeNode>(MakeBTreeNode(op2->Name));
+		MakeRightSubTree(ast, op2->ast);
+
+		std::shared_ptr<BTreeNode>  ptr3 = std::make_shared<BTreeNode>(MakeBTreeNode(op3->Name));
+		MakeThirdSubTree(ast, op3->ast);
 	}
 
 	IR(OPR _opr, Value* op1, Value* op2, Value* op3, Value* op4)
@@ -144,7 +204,23 @@ public:
 		AddOperand(op2);
 		AddOperand(op3);
 		AddOperand(op4);
+
+		ast = std::make_shared<BTreeNode>(MakeBTreeNode(printOpr(_opr)));
+		ast->m_NodeType = NT_OPERATOR;
+
+		std::shared_ptr<BTreeNode> ptr1 = std::make_shared<BTreeNode>(MakeBTreeNode(op1->Name));
+		MakeLeftSubTree(ast, op1->ast);
+
+		std::shared_ptr<BTreeNode>  ptr2 = std::make_shared<BTreeNode>(MakeBTreeNode(op2->Name));
+		MakeRightSubTree(ast, op2->ast);
+
+		std::shared_ptr<BTreeNode>  ptr3 = std::make_shared<BTreeNode>(MakeBTreeNode(op3->Name));
+		MakeThirdSubTree(ast, op3->ast);
+
+		std::shared_ptr<BTreeNode>  ptr4 = std::make_shared<BTreeNode>(MakeBTreeNode(op4->Name));
+		MakeFourthSubTree(ast, op4->ast);
 	}
+	string printOpr(OPR _opr);
 };
 
 class ConstInt : public IR
@@ -178,6 +254,8 @@ IR* CraeteLoadIR(Value* op1, IR::OPR _opr);
 IR* CraeteBinaryIR(Value* op1, Value* op2, IR::OPR _opr);
 
 IR* CreateAddIR(Value* op1, Value* op2);
+
+IR* CreateSubIR(Value* op1, Value* op2);
 
 IR* CraeteStoreIR(Value* op1, Value* op2, IR::OPR _opr);
 
