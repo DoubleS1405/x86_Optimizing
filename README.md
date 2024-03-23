@@ -25,10 +25,13 @@ Searching for papers and studies on de-obfuscation led to the conclusion that it
 <br>
 
 - Example<br>
-(1) Dead Store Code<br>
-![image](https://user-images.githubusercontent.com/15829327/236723085-104c7817-03c2-452c-afa5-fcf1dfa7fe31.png)<br><br>
-(2) intermediate representation for x86 assembly code<br>
+(1) intermediate representation for x86 assembly code<br>
 ![image](https://user-images.githubusercontent.com/15829327/236723160-22374843-4206-44ce-b431-5446805cce70.png)<br><br>
+
+(2) Dead Store Code<br>
+![image](https://github.com/DoubleS1405/x86_Optimizing/assets/15829327/ad1eb2fd-44e9-40b7-bb43-a50554cd8efb)<br><br>
+
 (3) Optimized intermediate representation <br>
-![image](https://user-images.githubusercontent.com/15829327/236723268-f46f354f-7d55-44dc-ba15-f5b3ce3512b9.png)<br><br>
+![image](https://github.com/DoubleS1405/x86_Optimizing/assets/15829327/691a1703-4d8c-40d1-88f4-3089e73827e0)<br><br>
+
 <br>
