@@ -18,10 +18,9 @@ The goal is to optimize the dummy code generated when applying VMProtector's mut
 <br>
 
 - Project planning<br>
-    (1) Researching optimization techniques to use in your project<br>
-    (2) Create an intermediate representation for x86 assembly code<br>
+    (1) Researching optimization techniques to use in this project<br>
+    (2) Generate an intermediate representation for x86 assembly code<br>
     (3) Optimize for intermediate representations<br>
-    (4) 테스트 (Themida, VMProtect의 Mutation 옵션이 적용된 코드에 대해서 테스트 진행)<br>
 <br>
 
 - Example<br>
