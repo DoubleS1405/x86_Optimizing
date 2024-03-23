@@ -8,7 +8,7 @@ Searching for papers and studies on de-obfuscation led to the conclusion that it
 <br>
 
 - What do we apply x86 code optimizations to?<br>
-가장 많이 사용하는 프로텍터인 VMProtect, Themida를 주 목표로 진행한다. 우선 VMProtector의 Mutation 및 Themida의 Mutation 적용 시 생성되는 Dummy Code를 최적화 하는 것을 목표로 한다.<br>
+The goal is to optimize the dummy code generated when applying VMProtector's mutation.<br>
 <br>
 
 - What optimization techniques to use? <br>
